@@ -249,6 +249,7 @@
                     <div class="bg-gray-100 rounded-lg p-1 flex text-sm shadow-inner" id="dateFilterContainer">
                         <button onclick="window.setDateFilter(this, 'today')" class="px-4 py-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition" data-i18n="dateToday">วันนี้</button>
                         <button onclick="window.setDateFilter(this, 'yesterday')" class="px-4 py-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition" data-i18n="dateYest">เมื่อวาน</button>
+                        <button onclick="window.setDateFilter(this, 'last_3d')" class="px-4 py-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition" data-i18n="date3">3 วันล่าสุด</button>
                         <button onclick="window.setDateFilter(this, 'last_7d')" class="px-4 py-1.5 rounded-md bg-white text-fb-blue font-bold shadow-sm" data-i18n="date7">7 วันล่าสุด</button>
                         <button onclick="window.setDateFilter(this, 'last_14d')" class="px-4 py-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition" data-i18n="date14">14 วันล่าสุด</button>
                         <button onclick="window.setDateFilter(this, 'last_30d')" class="px-4 py-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition" data-i18n="date30">30 วันล่าสุด</button>
@@ -1314,15 +1315,15 @@
                         const adSpendPct = convVal > 0 ? (spendNum / convVal) * 100 : 0;
                         const closingRate = msgs > 0 ? (purchases / msgs) * 100 : 0;
 
-                        // AI Analysis Logic
+                        // AI Analysis Logic (อัปเดตเกณฑ์การวิเคราะห์ใหม่ให้แม่นยำขึ้น โดยเน้น ROAS เป็นหลัก)
                         let aiType = 'medium';
                         let aiBadgeHtml = '';
 
-                        if (roas >= 2.0 || (purchases > 0 && costPur < 300)) {
+                        if (purchases > 0 && roas >= 2.0) {
                             aiType = 'good';
                             if(isActive) winnerCampCount++;
                             aiBadgeHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[11px] font-bold border border-emerald-200 shadow-sm"><i class="fa-solid fa-arrow-trend-up"></i> ควรสร้างซ้ำ</span>`;
-                        } else if ((spendNum > 500 && purchases === 0) || (roas > 0 && roas < 1.0 && spendNum > 300)) {
+                        } else if ((spendNum > 400 && purchases === 0) || (roas > 0 && roas < 1.5 && spendNum > 300)) {
                             aiType = 'bad';
                             if(isActive) loserCampCount++;
                             aiBadgeHtml = `<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[11px] font-bold border border-red-200 shadow-sm"><i class="fa-solid fa-power-off"></i> ควรปิดแคมเปญ</span>`;
@@ -1513,8 +1514,9 @@
                 const costPur = purchases > 0 ? spend / purchases : 0;
                 const roas = spend > 0 ? convVal / spend : 0;
 
-                if (roas >= 2.0 || (purchases > 0 && costPur < 300)) winnerCount++;
-                else if ((spend > 500 && purchases === 0) || (roas > 0 && roas < 1.0 && spend > 300)) loserCount++;
+                // อัปเดตเกณฑ์ AI ของหน้ารายละเอียดสื่อโฆษณาให้ตรงกับหน้าแคมเปญ
+                if (purchases > 0 && roas >= 2.0) winnerCount++;
+                else if ((spend > 400 && purchases === 0) || (roas > 0 && roas < 1.5 && spend > 300)) loserCount++;
             });
 
             const cardsHtml = topAds.map(ins => {
@@ -1574,10 +1576,10 @@
                     imageUrl = bestImage || cr.image_url || cr.thumbnail_url || imageUrl;
                 }
 
+                // อัปเดตเกณฑ์ AI การออกป้ายกำกับสื่อ
                 let type = 'medium';
-                if (roas >= 2.0 || (purchases > 0 && costPur < 300)) type = 'good';
-                else if (spend > 500 && purchases === 0) type = 'bad';
-                else if (roas > 0 && roas < 1.0 && spend > 300) type = 'bad';
+                if (purchases > 0 && roas >= 2.0) type = 'good';
+                else if ((spend > 400 && purchases === 0) || (roas > 0 && roas < 1.5 && spend > 300)) type = 'bad';
 
                 window.lastAnalyzedAds.push({
                     ad_id: adId,
