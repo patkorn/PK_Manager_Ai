@@ -139,7 +139,6 @@
 
     <!-- CREATIVE DETAILS MODAL -->
     <div id="creativeModal" class="fixed inset-0 bg-black/60 z-[150] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
-        <!-- ขยายหน้าต่างให้กว้างขึ้นเพื่อรองรับข้อมูลที่เพิ่มเข้ามา -->
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] animate-fade-in border border-gray-100">
             <div class="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/80">
                 <div class="flex items-center gap-3">
@@ -157,7 +156,6 @@
                 </div>
                 <h4 class="font-bold text-gray-800 mb-3 text-sm border-l-4 border-fb-blue pl-2">ผลลัพธ์การยิงแอด</h4>
                 
-                <!-- ตารางตัวเลข 12 ช่องเหมือนในหน้าจัดการแคมเปญ -->
                 <div class="grid grid-cols-3 md:grid-cols-4 gap-3 mb-6">
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm"><p class="text-[10px] text-gray-500 mb-1 font-medium uppercase">ยอดจ่ายสื่อนี้</p><p class="font-black text-gray-800 text-base" id="modalSpend"></p></div>
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm"><p class="text-[10px] text-gray-500 mb-1 font-medium uppercase">การเข้าถึง</p><p class="font-black text-gray-800 text-base" id="modalReach"></p></div>
@@ -334,7 +332,6 @@
                             <p class="text-gray-500" data-i18n="campSubtitle">เปิด/ปิด และแก้ไขงบประมาณแบบ Real-time</p>
                         </div>
                         
-                        <!-- เพิ่มแถบเครื่องมือสำหรับสร้างซ้ำแคมเปญ (Duplicate Toolbar) -->
                         <div class="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
                             <span class="text-sm font-bold text-gray-600 pl-2">เลือก <span id="campSelectedCount" class="text-fb-blue">0</span> รายการ</span>
                             <div class="h-6 w-px bg-gray-300"></div>
@@ -380,18 +377,30 @@
                     </div>
                 </div>
 
-                <!-- SECTION: AI Creative Analysis -->
+                <!-- SECTION: AI Creative Analysis (Drill Down Version) -->
                 <div id="section-creative" class="hidden animate-fade-in space-y-6">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800" data-i18n="crTitle">AI วิเคราะห์สื่อโฆษณา (Creatives)</h2>
                         <p class="text-gray-500" data-i18n="crSubtitle">วิเคราะห์ภาพและวิดีโอเพื่อหาตัวชนะและตัวที่ควรปิด</p>
                     </div>
 
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-end">
+                        <div class="flex-1 w-full">
+                            <label class="block text-sm font-bold text-gray-700 mb-2" data-i18n="crSelectCamp">เลือกแคมเปญเพื่อเจาะลึก (Select Campaign)</label>
+                            <select id="creativeCampaignSelector" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue font-medium">
+                                <option value="">-- กรุณาซิงค์ข้อมูลแดชบอร์ดก่อน --</option>
+                            </select>
+                        </div>
+                        <button onclick="window.fetchCampaignCreatives()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-sm transition flex items-center h-[46px] w-full md:w-auto justify-center" id="btnFetchCreatives">
+                            <i class="fa-solid fa-search mr-2"></i> <span data-i18n="btnFetchCr">วิเคราะห์แคมเปญนี้</span>
+                        </button>
+                    </div>
+
                     <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl p-4 flex items-center gap-4">
                         <div class="bg-white p-3 rounded-full text-purple-600 shadow-sm"><i class="fa-solid fa-robot text-xl"></i></div>
                         <div>
-                            <h3 class="font-bold text-gray-800" id="crSummaryText">กำลังรอโหลดข้อมูล...</h3>
-                            <p class="text-sm text-gray-600" id="crAiRec">กรุณากดปุ่ม "ซิงค์ข้อมูล" เพื่อให้ AI ดึงโฆษณาของคุณมาวิเคราะห์</p>
+                            <h3 class="font-bold text-gray-800" id="crSummaryText">รอการเลือกแคมเปญ...</h3>
+                            <p class="text-sm text-gray-600" id="crAiRec">กรุณาเลือกแคมเปญแล้วกดปุ่ม "วิเคราะห์แคมเปญนี้"</p>
                         </div>
                     </div>
 
@@ -429,7 +438,7 @@
                             </table>
                         </div>
 
-                        <!-- Placement Table (Updated to show specific position like Feed, Story, Reels) -->
+                        <!-- Placement Table -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                             <h3 class="font-bold text-gray-800 mb-4" data-i18n="inPlacement">ตำแหน่งการจัดวางที่ขายได้ (Top Placements)</h3>
                             <table class="w-full text-left text-sm">
@@ -779,7 +788,6 @@
             }
         };
 
-        // ฟังก์ชันสุ่มรหัส ID ที่ปลอดภัย (ไม่พังเวลาทำงานใน Local)
         function generateUUID() {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 try { return crypto.randomUUID(); } catch(e) {}
@@ -787,7 +795,6 @@
             return 'id_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
         }
 
-        // --- เริ่มต้นโหลดระบบ ---
         window.onload = function() {
             document.getElementById('globalLoader').classList.add('hidden');
             document.getElementById('authScreen').classList.remove('hidden');
@@ -804,10 +811,11 @@
                 colOnOff: "ON/OFF", colName: "CAMPAIGN NAME", colBudget: "DAILY BUDGET", colSpend: "SPEND", colResult: "PURCHASES",
                 colReach: "REACH", colCpm: "CPM", colCtr: "CTR", colMsg: "MESSAGES", colCostMsg: "COST/MSG", colCostPur: "COST/PUR", colConvVal: "REVENUE", colRoas: "ROAS", colAdSpendPct: "AD SPEND %", colClosingRate: "CLOSING %",
                 crTitle: "AI Creative Analysis", crSubtitle: "Analyze creatives to find winners and losers",
+                crSelectCamp: "Select Campaign to Analyze", btnFetchCr: "Analyze Campaign",
                 crSummary: "This campaign has 3 ad creatives", crRecText: "AI Recommendation: 1 high-profit creative found (Clone), 1 loss-making creative (Turn off).",
                 crGood: "🟢 Good (Winner)", crMedium: "🟡 Medium", crBad: "🔴 Bad (Loser)", crBtnClone: "Clone this Ad", crBtnWatch: "Watch closely", crBtnStop: "Turn off immediately",
                 inTitle: "Insights & Breakdown", inSubtitle: "Analyze by Age, Gender, and Placements",
-                inDemographic: "Demographics (Age & Gender)", inPlacement: "Placements",
+                inDemographic: "Demographics (Age & Gender)", inPlacement: "Top Placements",
                 colAge: "Age", colGender: "Gender", colPlatform: "Platform", lblFemale: "Female", lblMale: "Male",
                 ruleTitle: "Automated Rules", ruleSubtitle: "Set conditions to pause ads automatically",
                 ruleName: "Rule Name", ruleAction: "Action to take", actPause: "Pause Campaign", actActivate: "Activate Campaign", actIncBg: "Increase Budget (%)", actDecBg: "Decrease Budget (%)", actResetBg: "Reset Budget",
@@ -831,6 +839,7 @@
                 colOnOff: "เปิด/ปิด", colName: "ชื่อแคมเปญ", colBudget: "งบต่อวัน", colSpend: "จ่ายไป", colResult: "การซื้อ",
                 colReach: "การเข้าถึง", colCpm: "CPM", colCtr: "CTR", colMsg: "ทักแชท", colCostMsg: "ต้นทุน/ทัก", colCostPur: "ต้นทุน/ซื้อ", colConvVal: "ยอดขาย", colRoas: "ROAS", colAdSpendPct: "%ค่าแอด", colClosingRate: "%ปิดการขาย",
                 crTitle: "AI วิเคราะห์สื่อโฆษณา (Creatives)", crSubtitle: "วิเคราะห์ภาพและวิดีโอเพื่อหาตัวชนะและตัวที่ควรปิด",
+                crSelectCamp: "เลือกแคมเปญเพื่อเจาะลึก (Select Campaign)", btnFetchCr: "วิเคราะห์แคมเปญนี้",
                 crSummary: "แคมเปญนี้มี 3 สื่อโฆษณา", crRecText: "คำแนะนำจาก AI: พบสื่อที่ทำกำไรได้ดีมาก 1 ตัว (แนะนำให้โคลน) และสื่อที่ขาดทุน 1 ตัว (แนะนำให้ปิด)",
                 crGood: "🟢 ดีมาก (Winner)", crMedium: "🟡 ปานกลาง", crBad: "🔴 แย่ (Loser)", crBtnClone: "โคลนสื่อนี้", crBtnWatch: "เฝ้าระวัง", crBtnStop: "ปิดสื่อนี้ทันที",
                 inTitle: "ข้อมูลเชิงลึก (Breakdown)", inSubtitle: "วิเคราะห์แยกตามอายุ เพศ และตำแหน่งการจัดวาง",
@@ -850,7 +859,6 @@
             }
         };
 
-        // --- Auth Functions ---
         window.setAuthMode = function(mode) {
             const btnLogin = document.getElementById('tabLogin');
             const btnReg = document.getElementById('tabRegister');
@@ -873,7 +881,7 @@
         window.handleLogin = async function() {
             const username = document.getElementById('inpLoginUser').value.trim();
             const pin = document.getElementById('inpLoginPin').value.trim();
-            if(!username || !pin) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน");
+            if(!username || !pin) return window.showToast("กรุณากรอกข้อมูลให้ครบถ้วน");
 
             const btn = document.getElementById('btnLogin');
             const originalText = btn.innerHTML;
@@ -885,16 +893,16 @@
 
                 if(found) {
                     loggedInEmployee = found;
-                    showToast("เข้าสู่ระบบสำเร็จ!");
+                    window.showToast("เข้าสู่ระบบสำเร็จ!");
                     document.getElementById('authScreen').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
                     initDashboardForUser();
                 } else {
-                    showToast("Username หรือ PIN ไม่ถูกต้อง");
+                    window.showToast("Username หรือ PIN ไม่ถูกต้อง");
                 }
             } catch(e) {
                 console.error(e);
-                showToast("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+                window.showToast("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
             } finally {
                 btn.innerHTML = originalText;
             }
@@ -905,13 +913,12 @@
             const pin = document.getElementById('inpRegPin').value.trim();
             const inviteCode = document.getElementById('inpRegInviteCode').value.trim();
             
-            if(!username || !pin) return showToast("กรุณากรอกข้อมูลบัญชีให้ครบถ้วน");
-            if(pin.length < 4) return showToast("PIN ควรมีอย่างน้อย 4 หลัก");
-            if(!inviteCode) return showToast("กรุณาใส่รหัสองค์กร (Invite Code)");
+            if(!username || !pin) return window.showToast("กรุณากรอกข้อมูลบัญชีให้ครบถ้วน");
+            if(pin.length < 4) return window.showToast("PIN ควรมีอย่างน้อย 4 หลัก");
+            if(!inviteCode) return window.showToast("กรุณาใส่รหัสองค์กร (Invite Code)");
             
-            // ตรวจสอบรหัสองค์กร จาก Array 10 รหัส
             if(!ALLOWED_INVITE_CODES.includes(inviteCode.toUpperCase())) {
-                return showToast("รหัสองค์กรไม่ถูกต้อง! ไม่อนุญาตให้สร้างบัญชี");
+                return window.showToast("รหัสองค์กรไม่ถูกต้อง! ไม่อนุญาตให้สร้างบัญชี");
             }
 
             const btn = document.getElementById('btnRegister');
@@ -921,7 +928,7 @@
             try {
                 const employees = await dbService.getEmployees();
                 if(employees.some(e => e.username.toLowerCase() === username.toLowerCase())) {
-                    showToast("Username นี้มีผู้ใช้งานแล้ว");
+                    window.showToast("Username นี้มีผู้ใช้งานแล้ว");
                     return;
                 }
 
@@ -929,14 +936,14 @@
                 const newData = { username, pin, orgCode: inviteCode.toUpperCase(), fb_token: '', fb_ad_accounts: [] };
                 await dbService.saveEmployee(newId, newData);
                 
-                showToast("สร้างบัญชีส่วนตัวสำเร็จ! กรุณาเข้าสู่ระบบ");
+                window.showToast("สร้างบัญชีส่วนตัวสำเร็จ! กรุณาเข้าสู่ระบบ");
                 document.getElementById('inpRegUser').value = '';
                 document.getElementById('inpRegPin').value = '';
                 document.getElementById('inpRegInviteCode').value = '';
-                setAuthMode('login');
+                window.setAuthMode('login');
             } catch(e) {
                 console.error(e);
-                showToast("เกิดข้อผิดพลาดในการสร้างบัญชี");
+                window.showToast("เกิดข้อผิดพลาดในการสร้างบัญชี");
             } finally {
                 btn.innerHTML = originalText;
             }
@@ -947,10 +954,8 @@
             document.getElementById('appContainer').classList.add('hidden');
             document.getElementById('authScreen').classList.remove('hidden');
             
-            // Clear inputs
             document.getElementById('inpLoginPin').value = '';
             
-            // Reset Dashboard state
             globalCampaignsData = [];
             globalChartData = [];
             document.getElementById('campaignTableBody').innerHTML = '<tr><td colspan="16" class="p-6 text-center text-gray-500">กรุณากด "ซิงค์ข้อมูล" เพื่อดึงแคมเปญจริง</td></tr>';
@@ -967,7 +972,7 @@
                 spendChartInstance.update(); 
             }
             
-            showToast("ออกจากระบบแล้ว");
+            window.showToast("ออกจากระบบแล้ว");
         };
 
         function initDashboardForUser() {
@@ -1021,14 +1026,13 @@
             window.switchTab('dashboard');
 
             if(!loggedInEmployee.fb_token) {
-                showToast("ยินดีต้อนรับ! กรุณาตั้งค่า Token เพื่อเริ่มใช้งาน");
+                window.showToast("ยินดีต้อนรับ! กรุณาตั้งค่า Token เพื่อเริ่มใช้งาน");
                 window.switchTab('settings');
             } else if(loggedInEmployee.fb_ad_accounts && loggedInEmployee.fb_ad_accounts.length > 0) {
                 window.syncData(); 
             }
         }
 
-        // --- Expose UI Functions to Window ---
         window.setDateFilter = function(btn, preset) {
             const container = btn.parentElement;
             const buttons = container.querySelectorAll('button');
@@ -1139,7 +1143,6 @@
             }
         };
 
-        // --- Select and Duplicate Logic ---
         window.toggleAllCamps = function(source) {
             const checkboxes = document.querySelectorAll('.camp-checkbox');
             checkboxes.forEach(cb => cb.checked = source.checked);
@@ -1167,7 +1170,7 @@
             if(copies < 1 || copies > 20) return window.showToast("ระบุจำนวนชุด ระหว่าง 1-20 ชุด");
 
             const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังสร้าง...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังแยกข้อมูลสร้าง...';
             btn.disabled = true;
 
             try {
@@ -1176,36 +1179,71 @@
                 
                 for(let cb of checkboxes) {
                     const campId = cb.value;
-                    for(let i=0; i<copies; i++) {
-                        // อัปเดตกลับมาใช้ JSON Payload เนื่องจากตอนนี้รันบน GitHub (HTTPS) แล้ว
-                        // แก้ปัญหา Facebook API แจ้ง Invalid Parameter เพราะมอง 'true' เป็น String
-                        const url = `https://graph.facebook.com/v21.0/${campId}/copies?access_token=${token}`;
+                    
+                    // 1. ดึงข้อมูล Adsets ทั้งหมดใน Campaign นี้
+                    const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
+                    const adsetsData = await adsetsRes.json();
+                    
+                    if(adsetsData.error) {
+                        lastError = adsetsData.error.error_user_msg || adsetsData.error.message;
+                        continue;
+                    }
+                    
+                    // กรองเอาเฉพาะอันที่ไม่ถูกลบ
+                    const activeAdsets = (adsetsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
-                        const res = await fetch(url, {
+                    for(let i=0; i<copies; i++) {
+                        // 2. สร้าง Campaign เปล่าขึ้นมาก่อน (ไม่คัดลอกลูกๆ)
+                        const campParams = new URLSearchParams();
+                        campParams.append('access_token', token);
+                        campParams.append('deep_copy', 'false'); // ไม่เอาลูก
+                        campParams.append('status_option', 'PAUSED');
+
+                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                deep_copy: true,
-                                status_option: 'PAUSED'
-                            })
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: campParams.toString()
                         });
                         
-                        const data = await res.json();
+                        const campCopyData = await campCopyRes.json();
                         
-                        if(!data.error) {
+                        if(campCopyData.error) {
+                            lastError = campCopyData.error.error_user_msg || campCopyData.error.message;
+                            continue; // ข้ามชุดนี้ไป
+                        }
+                        
+                        const newCampId = campCopyData.copied_campaign_id || campCopyData.id;
+                        
+                        // 3. วนลูปก๊อปปี้ Adset เข้าไปใน Campaign ใหม่ (พร้อมดึง Ads ของ Adset นั้นๆ ไปด้วย)
+                        let adsetSuccess = true;
+                        for(let adset of activeAdsets) {
+                            const adsetParams = new URLSearchParams();
+                            adsetParams.append('access_token', token);
+                            adsetParams.append('deep_copy', 'true'); // ก็อปปี้ Adset พร้อม Ads ของมัน
+                            adsetParams.append('campaign_id', newCampId); // ย้ายไปใส่แคมเปญใหม่
+                            adsetParams.append('status_option', 'PAUSED');
+                            
+                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: adsetParams.toString()
+                            });
+                            
+                            const adsetCopyData = await adsetCopyRes.json();
+                            if(adsetCopyData.error) {
+                                lastError = adsetCopyData.error.error_user_msg || adsetCopyData.error.message;
+                                adsetSuccess = false;
+                            }
+                        }
+                        
+                        if(adsetSuccess) {
                             successCount++;
-                        } else {
-                            console.error("Copy Error Full:", data.error);
-                            // ดึงข้อความ Error เชิงลึกจาก Facebook มาแสดง (ถ้ามี)
-                            lastError = data.error.error_user_msg || data.error.message;
                         }
                     }
                 }
                 
                 if(successCount > 0) {
-                    window.showToast(`สร้างซ้ำสำเร็จ ${successCount} ชุด!`);
+                    window.showToast(`สร้างซ้ำแบบแยกส่วนสำเร็จ ${successCount} ชุด!`);
                     document.getElementById('selectAllCamps').checked = false;
                     window.toggleAllCamps(document.getElementById('selectAllCamps'));
                     setTimeout(() => { window.syncData(); }, 1500);
@@ -1238,6 +1276,58 @@
             }
             return 0;
         }
+
+        window.populateCreativeDropdown = function() {
+            const sel = document.getElementById('creativeCampaignSelector');
+            if(!sel) return;
+            sel.innerHTML = `<option value="">-- ${currentLang === 'th' ? 'เลือกแคมเปญ' : 'Select Campaign'} --</option>`;
+            
+            if(globalCampaignsData && globalCampaignsData.length > 0) {
+                globalCampaignsData.forEach(camp => {
+                    const statusIcon = camp.status === 'ACTIVE' ? '🟢' : '⚫';
+                    sel.add(new Option(`${statusIcon} ${camp.name}`, camp.id));
+                });
+                
+                const firstActive = globalCampaignsData.find(c => c.status === 'ACTIVE');
+                if(firstActive) sel.value = firstActive.id;
+            }
+        };
+
+        window.analyzeCampaign = function(campId) {
+            window.switchTab('creative');
+            const sel = document.getElementById('creativeCampaignSelector');
+            if(sel) {
+                sel.value = campId;
+                window.fetchCampaignCreatives();
+            }
+        };
+
+        window.fetchCampaignCreatives = async function() {
+            const campId = document.getElementById('creativeCampaignSelector').value;
+            if(!campId) return window.showToast(currentLang === 'th' ? "กรุณาเลือกแคมเปญก่อน" : "Please select a campaign first");
+            
+            const btn = document.getElementById('btnFetchCreatives');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังดึง...';
+            btn.disabled = true;
+            
+            const token = loggedInEmployee.fb_token;
+            
+            try {
+                const urlAds = `https://graph.facebook.com/v21.0/${campId}/insights?level=ad&fields=ad_id,ad_name,adset_name,campaign_id,spend,reach,impressions,cpm,actions,action_values,ctr&date_preset=${currentDatePreset}&use_account_attribution_setting=true&limit=100&access_token=${token}`;
+                
+                const dataAds = await fetchFB(urlAds);
+                await window.renderCreativeAI(dataAds.data, token);
+                
+                window.showToast(currentLang === 'th' ? "ดึงข้อมูลสื่อสำเร็จ!" : "Creatives fetched!");
+            } catch(e) {
+                console.error(e);
+                window.showToast(currentLang === 'th' ? "เกิดข้อผิดพลาดในการดึงสื่อโฆษณา" : "Error fetching creatives");
+            } finally {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        };
 
         window.syncData = async function() {
             const icon = document.getElementById('syncIcon');
@@ -1308,18 +1398,19 @@
                 }
 
                 window.populateABDropdowns();
+                window.populateCreativeDropdown(); 
+                
                 const tbody = document.getElementById('campaignTableBody');
                 tbody.innerHTML = ''; 
                 
                 let chartItems = [];
 
                 if (globalCampaignsData.length > 0) {
-                    // เรียงลำดับให้แคมเปญที่เปิดใช้งาน (ACTIVE) อยู่บนสุดเสมอ จากนั้นค่อยเรียงตามการซื้อ
                     globalCampaignsData.sort((a, b) => {
                         const aActive = a.status === 'ACTIVE' ? 1 : 0;
                         const bActive = b.status === 'ACTIVE' ? 1 : 0;
-                        if (aActive !== bActive) return bActive - aActive; // ACTIVE ขึ้นก่อนเสมอ
-                        return b.purchases - a.purchases; // ตามด้วยจำนวนการซื้อ
+                        if (aActive !== bActive) return bActive - aActive; 
+                        return b.purchases - a.purchases; 
                     });
                     
                     let sumSpend = 0, sumReach = 0, sumImps = 0, sumClicks = 0;
@@ -1372,7 +1463,12 @@
                                     <label for="toggle_c${index}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                                 </div>
                             </td>
-                            <td class="p-3 font-semibold ${isActive ? 'text-fb-blue' : 'text-gray-500'} max-w-[200px] truncate" title="${camp.name}">${camp.name}</td>
+                            <td class="p-3 font-semibold ${isActive ? 'text-fb-blue' : 'text-gray-500'} max-w-[200px]" title="${camp.name}">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="truncate block">${camp.name}</span>
+                                    <button onclick="window.analyzeCampaign('${camp.id}')" class="text-purple-500 hover:text-white hover:bg-purple-500 p-1.5 rounded transition" title="เจาะลึกสื่อโฆษณา"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                                </div>
+                            </td>
                             <td class="p-3">
                                 <div class="flex items-center gap-2">
                                     <div class="relative w-24">
@@ -1437,13 +1533,6 @@
                 }
 
                 try {
-                    // Update API request to fetch reach, impressions, cpm for Ads as well
-                    const urlAds = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?level=ad&fields=ad_id,ad_name,campaign_id,spend,reach,impressions,cpm,actions,action_values,ctr&date_preset=${currentDatePreset}&use_account_attribution_setting=true&limit=500&access_token=${token}`;
-                    const dataAds = await fetchFB(urlAds);
-                    await window.renderCreativeAI(dataAds.data, token); 
-                } catch(e) { console.warn("Ads AI Error", e); }
-
-                try {
                     const urlDemo = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?breakdowns=age,gender&fields=spend,actions,action_values&date_preset=${currentDatePreset}&use_account_attribution_setting=true&limit=500&access_token=${token}`;
                     const dataDemo = await fetchFB(urlDemo);
                     window.renderDemographics(dataDemo.data);
@@ -1500,19 +1589,15 @@
             
             if(!adsInsights || adsInsights.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 col-span-3 text-center">ไม่พบข้อมูลโฆษณาในช่วงเวลานี้</p>';
-                document.getElementById('crSummaryText').innerText = `รอการวิเคราะห์`;
-                document.getElementById('crAiRec').innerText = `ไม่มีข้อมูลเพียงพอให้ AI วิเคราะห์`;
+                document.getElementById('crSummaryText').innerText = `วิเคราะห์เสร็จสิ้น`;
+                document.getElementById('crAiRec').innerText = `แคมเปญนี้ยังไม่มีโฆษณาที่มียอดใช้จ่าย`;
                 return;
             }
 
-            let activeAds = adsInsights.filter(ad => {
-                if (parseFloat(ad.spend || 0) <= 0) return false;
-                const parentCamp = globalCampaignsData.find(c => c.id === ad.campaign_id);
-                return parentCamp && parentCamp.status === 'ACTIVE';
-            });
+            let activeAds = adsInsights.filter(ad => parseFloat(ad.spend || 0) > 0);
             
             activeAds.sort((a,b) => parseFloat(b.spend) - parseFloat(a.spend));
-            const topAds = activeAds.slice(0, 3);
+            const topAds = activeAds; 
             
             let creativesData = {};
             let storiesData = {};
@@ -1552,6 +1637,7 @@
             const cardsHtml = topAds.map(ins => {
                 const adName = ins.ad_name || 'ไม่ทราบชื่อ';
                 const adId = ins.ad_id;
+                const adsetName = ins.adset_name || 'ไม่ทราบชื่อชุดโฆษณา';
                 const spend = parseFloat(ins.spend || 0);
                 const reach = parseInt(ins.reach || 0);
                 const cpm = parseFloat(ins.cpm || 0);
@@ -1610,7 +1696,6 @@
                 else if (spend > 500 && purchases === 0) type = 'bad';
                 else if (roas > 0 && roas < 1.0 && spend > 300) type = 'bad';
 
-                // เก็บข้อมูลโฆษณาลงใน Global สำหรับดึงมาโชว์ใน Modal
                 window.lastAnalyzedAds.push({
                     ad_id: adId,
                     ad_name: adName,
@@ -1652,7 +1737,7 @@
                                 <span class="bg-${color}-100 text-${color}-700 px-3 py-1 rounded-full text-xs font-bold border border-${color}-200">${badge}</span>
                                 ${icon ? `<i class="fa-solid ${icon} text-xl"></i>` : ''}
                             </div>
-                            <div class="relative w-full h-36 bg-gray-900 rounded-lg mb-4 border border-gray-200 overflow-hidden flex items-center justify-center">
+                            <div class="relative w-full h-36 bg-gray-900 rounded-lg mb-3 border border-gray-200 overflow-hidden flex items-center justify-center">
                                 <img src="${imageUrl}" class="max-w-full max-h-full object-contain" onerror="this.src='https://placehold.co/400x300/1f2937/64748b?text=Image+Not+Found'">
                                 ${isVideo ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <div class="w-12 h-12 bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-sm border border-white/20 shadow-lg">
@@ -1660,8 +1745,9 @@
                                     </div>
                                 </div>` : ''}
                             </div>
-                            <h4 class="font-bold text-gray-800 truncate" title="${adName}">${adName}</h4>
-                            <div class="mt-4 space-y-2 text-sm">
+                            <p class="text-[11px] text-fb-blue font-bold mb-1 truncate"><i class="fa-solid fa-layer-group"></i> ${adsetName}</p>
+                            <h4 class="font-bold text-gray-800 truncate mb-4" title="${adName}">${adName}</h4>
+                            <div class="space-y-2 text-sm">
                                 <div class="flex justify-between"><span class="text-gray-500">ROAS</span><span class="font-bold text-${type==='bad'?'red-500':(type==='good'?'emerald-600':'gray-800')}">${roas.toFixed(2)}x</span></div>
                                 <div class="flex justify-between"><span class="text-gray-500">CTR</span><span class="font-bold text-gray-800">${ctr.toFixed(2)}%</span></div>
                                 <div class="flex justify-between"><span class="text-gray-500">ต้นทุนซื้อ</span><span class="font-bold text-${type==='bad'?'red-500':(type==='good'?'emerald-600':'gray-800')}">฿${costPur.toFixed(2)}</span></div>
@@ -1674,11 +1760,10 @@
             }).join('');
 
             container.innerHTML = cardsHtml;
-            document.getElementById('crSummaryText').innerText = `วิเคราะห์โฆษณาจากแคมเปญที่เปิดใช้งานอยู่ ${activeAds.length} ตัว`;
+            document.getElementById('crSummaryText').innerText = `วิเคราะห์โฆษณาในแคมเปญนี้ทั้งหมด ${activeAds.length} ตัว`;
             document.getElementById('crAiRec').innerText = `คำแนะนำจาก AI: พบโฆษณาที่ทำกำไรได้ดี ${winnerCount} ตัว และโฆษณาที่ขาดทุน ${loserCount} ตัว`;
         };
 
-        // --- ฟังก์ชันเปิดหน้าต่างรายละเอียดสื่อ (Creative Modal) ---
         window.viewCreativeDetails = function(adId) {
             const ad = window.lastAnalyzedAds.find(a => a.ad_id === adId);
             if(!ad) return;
@@ -1686,7 +1771,6 @@
             document.getElementById('modalAdName').innerText = ad.ad_name;
             document.getElementById('modalAdImage').src = ad.computedImage;
             
-            // อัปเดตข้อมูล 12 ช่องเหมือนในหน้าแคมเปญ
             document.getElementById('modalSpend').innerText = '฿' + ad.spend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('modalReach').innerText = ad.reach.toLocaleString();
             document.getElementById('modalCPM').innerText = '฿' + ad.cpm.toFixed(2);
