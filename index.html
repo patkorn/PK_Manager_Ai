@@ -1266,7 +1266,7 @@
                     document.getElementById('duplicateModal').classList.add('hidden');
                     document.getElementById('selectAllCamps').checked = false;
                     window.toggleAllCamps(document.getElementById('selectAllCamps'));
-                    setTimeout(() => { window.syncData(); }, 1500);
+                    setTimeout(() => { window.syncData(); }, 3000);
                 } else {
                     window.showToast("ไม่สามารถสร้างซ้ำได้: " + (lastError || "ไม่ทราบสาเหตุ"));
                 }
@@ -1366,7 +1366,7 @@
 
             try {
                 const urlAcc = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?level=account&fields=spend,cpm,ctr,actions,action_values&date_preset=${currentDatePreset}&use_account_attribution_setting=true&access_token=${token}`;
-                const urlCampInfo = `https://graph.facebook.com/v21.0/${formattedAdAcc}/campaigns?fields=id,name,status,daily_budget&limit=500&access_token=${token}`;
+                const urlCampInfo = `https://graph.facebook.com/v21.0/${formattedAdAcc}/campaigns?fields=id,name,status,daily_budget,created_time&limit=500&access_token=${token}`;
                 const urlCampIns = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?level=campaign&fields=campaign_id,spend,reach,impressions,clicks,cpm,ctr,actions,action_values&date_preset=${currentDatePreset}&use_account_attribution_setting=true&limit=500&access_token=${token}`;
 
                 const [dataAcc, dataCampInfo, dataCampIns] = await Promise.all([
@@ -1428,6 +1428,13 @@
                         const aActive = a.status === 'ACTIVE' ? 1 : 0;
                         const bActive = b.status === 'ACTIVE' ? 1 : 0;
                         if (aActive !== bActive) return bActive - aActive; 
+                        
+                        // ถ้าแคมเปญถูกปิดอยู่ (PAUSED) ให้เรียงอันที่เพิ่งสร้างใหม่ล่าสุดขึ้นก่อน
+                        if (aActive === 0) {
+                            const timeA = a.created_time ? new Date(a.created_time).getTime() : 0;
+                            const timeB = b.created_time ? new Date(b.created_time).getTime() : 0;
+                            return timeB - timeA;
+                        }
                         return b.purchases - a.purchases; 
                     });
                     
@@ -1437,6 +1444,11 @@
                     globalCampaignsData.forEach((camp, index) => {
                         const isActive = camp.status === 'ACTIVE';
                         const budget = camp.daily_budget ? (camp.daily_budget / 100).toLocaleString() : 'N/A'; 
+                        
+                        // เช็คว่าเป็นแคมเปญใหม่ภายใน 24 ชม. หรือไม่
+                        const createdDate = camp.created_time ? new Date(camp.created_time) : new Date(0);
+                        const isNew = (new Date() - createdDate) < 24 * 60 * 60 * 1000;
+                        const newBadge = isNew && !isActive ? `<span class="ml-2 px-1.5 py-0.5 bg-pink-100 text-pink-600 text-[10px] font-black rounded-full shadow-sm">NEW</span>` : '';
                         
                         let spendNum = 0, reach = 0, cpm = 0, ctr = 0, impressions = 0, clicks = 0;
                         let purchases = 0, costPur = 0, convVal = 0, roas = 0, msgs = 0, costMsg = 0;
@@ -1483,7 +1495,7 @@
                             </td>
                             <td class="p-3 font-semibold ${isActive ? 'text-fb-blue' : 'text-gray-500'} max-w-[200px]" title="${camp.name}">
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="truncate block">${camp.name}</span>
+                                    <span class="truncate block">${camp.name}${newBadge}</span>
                                     <button onclick="window.analyzeCampaign('${camp.id}')" class="text-purple-500 hover:text-white hover:bg-purple-500 p-1.5 rounded transition" title="เจาะลึกสื่อโฆษณา"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
                                 </div>
                             </td>
