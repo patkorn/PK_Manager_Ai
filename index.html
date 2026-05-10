@@ -164,7 +164,7 @@
                 </div>
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
                     <i class="fa-solid fa-info-circle text-fb-blue mt-0.5"></i>
-                    <p class="text-xs text-fb-dark font-medium leading-relaxed">ระบบจะคัดลอกโครงสร้างต้นฉบับมาเป๊ะๆ 100% พร้อมปรับใช้งบและเวลาใหม่ให้ แคมเปญใหม่จะถูกสร้างในสถานะ "ปิด (Paused)" เสมอ</p>
+                    <p class="text-xs text-fb-dark font-medium leading-relaxed">ระบบจะคัดลอกโครงสร้างต้นฉบับมาเป๊ะๆ 100% (แคมเปญ>ชุดโฆษณา>โฆษณา) พร้อมปรับใช้งบและเวลาใหม่ให้ แคมเปญใหม่จะถูกสร้างในสถานะ "ปิด (Paused)" เสมอ</p>
                 </div>
             </div>
             <div class="p-5 border-t border-gray-100 flex gap-3 bg-gray-50/50">
@@ -411,7 +411,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION: AI Creative Analysis (Drill Down Version) -->
+                <!-- SECTION: AI Creative Analysis -->
                 <div id="section-creative" class="hidden animate-fade-in space-y-6">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800" data-i18n="crTitle">AI วิเคราะห์สื่อโฆษณา (Creatives)</h2>
@@ -1202,73 +1202,84 @@
                     const activeAdsets = (adsetsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
                     for(let i=0; i<copies; i++) {
-                        // 2. สร้าง Campaign เปล่า โดยส่ง deep_copy เป็น boolean (false) แบบ JSON เพื่อบังคับไม่ให้เอาลูกมาด้วย
-                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies?access_token=${token}`, {
+                        // 2. สร้าง Campaign เปล่า โดยส่งรูปแบบปกติผ่าน URLSearchParams 
+                        // เราส่ง deep_copy เป็น false เพื่อดึงแค่ตัวเปลือกแคมเปญ เลี่ยงกฎ 30 ชิ้นของเฟสบุ๊ค
+                        const campParams = new URLSearchParams();
+                        campParams.append('access_token', token);
+                        campParams.append('deep_copy', 'false');
+                        campParams.append('status_option', 'PAUSED');
+
+                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ deep_copy: false, status_option: 'PAUSED' })
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: campParams.toString()
                         });
+                        
                         const campCopyData = await campCopyRes.json();
                         if(campCopyData.error) {
                             lastError = campCopyData.error.error_user_msg || campCopyData.error.message;
                             continue; 
                         }
+                        
                         const newCampId = campCopyData.copied_campaign_id || campCopyData.id;
+                        let adsetSuccess = true;
 
-                        // 3. วนลูปคัดลอก Adset ทีละชิ้น
+                        // 3. วนลูปคัดลอก Adset ทีละชิ้น ยัดเข้าไปในแคมเปญใหม่
                         for(let adset of activeAdsets) {
-                            // ดึงโฆษณา (Ads) เฉพาะของชุดโฆษณานี้ออกมาก่อน
-                            const adsInAdsetRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
-                            const adsInAdsetData = await adsInAdsetRes.json();
-                            const activeAdsInAdset = (adsInAdsetData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
-
-                            // ก๊อปปี้ Adset เปล่าๆ เข้าไปใน Campaign ใหม่ (deep_copy: false) เลี่ยงข้อจำกัด 30 ชิ้นของเฟสบุ๊ค
-                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies?access_token=${token}`, {
+                            
+                            const adsetParams = new URLSearchParams();
+                            adsetParams.append('access_token', token);
+                            adsetParams.append('campaign_id', newCampId); // ส่งเข้าไปในแคมเปญใหม่
+                            adsetParams.append('deep_copy', 'true'); // สั่งให้ Facebook ดึงสื่อโฆษณา(Ads) ที่อยู่ใน Adset นี้ติดมาด้วย!
+                            adsetParams.append('status_option', 'PAUSED');
+                            
+                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ campaign_id: newCampId, deep_copy: false, status_option: 'PAUSED' })
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: adsetParams.toString()
                             });
+                            
                             const adsetCopyData = await adsetCopyRes.json();
                             if(adsetCopyData.error) {
                                 lastError = adsetCopyData.error.error_user_msg || adsetCopyData.error.message;
+                                adsetSuccess = false;
                                 continue;
                             }
+                            
                             const newAdsetId = adsetCopyData.copied_adset_id || adsetCopyData.id;
 
-                            // 4. แก้ไขงบประมาณและเวลาเริ่มรันแอดตามคำสั่งของคุณ
+                            // 4. อัปเดตงบประมาณและเวลา ให้กับ Adset ที่เพิ่งถูกสร้างขึ้นมา
                             if(inputBudget || inputTime) {
-                                let updatePayload = {};
-                                if(inputBudget) updatePayload.daily_budget = Math.floor(parseFloat(inputBudget) * 100);
-                                if(inputTime) updatePayload.start_time = Math.floor(new Date(inputTime).getTime() / 1000);
+                                const updateParams = new URLSearchParams();
+                                updateParams.append('access_token', token);
                                 
-                                await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}?access_token=${token}`, {
+                                if(inputBudget) updateParams.append('daily_budget', Math.floor(parseFloat(inputBudget) * 100));
+                                if(inputTime) updateParams.append('start_time', Math.floor(new Date(inputTime).getTime() / 1000));
+                                
+                                await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}`, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(updatePayload)
-                                });
-                            }
-
-                            // 5. วนลูปก๊อปปี้โฆษณา (Ads) เฉพาะของชุดนั้นๆ ใส่ตามเข้าไปทีละอัน
-                            for(let adItem of activeAdsInAdset) {
-                                await fetch(`https://graph.facebook.com/v21.0/${adItem.id}/copies?access_token=${token}`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ adset_id: newAdsetId, status_option: 'PAUSED' })
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                    body: updateParams.toString()
                                 });
                             }
                         }
-                        successCount++;
+                        
+                        if(adsetSuccess) {
+                            successCount++;
+                        }
                     }
                 }
                 
                 if(successCount > 0) {
-                    window.showToast(`สร้างซ้ำแบบแยกส่วนและตั้งค่าใหม่สำเร็จ ${successCount} แคมเปญ!`);
+                    window.showToast(`สร้างซ้ำและตั้งค่าใหม่สำเร็จ ${successCount} แคมเปญ!`);
                     document.getElementById('duplicateModal').classList.add('hidden');
                     document.getElementById('selectAllCamps').checked = false;
                     window.toggleAllCamps(document.getElementById('selectAllCamps'));
-                    setTimeout(() => { window.syncData(); }, 3000);
+                    setTimeout(() => { window.syncData(); }, 1500);
                 } else {
-                    window.showToast("ไม่สามารถสร้างซ้ำได้: " + (lastError || "ไม่ทราบสาเหตุ"));
+                    let errMsg = "ไม่สามารถสร้างซ้ำได้: " + (lastError || "ไม่ทราบสาเหตุ");
+                    if(lastError.includes("Application request limit reached")) errMsg = "API Limit เต็ม กรุณารอสักครู่แล้วกดใหม่";
+                    window.showToast(errMsg);
                 }
             } catch(e) {
                 console.error(e);
@@ -1429,7 +1440,7 @@
                         const bActive = b.status === 'ACTIVE' ? 1 : 0;
                         if (aActive !== bActive) return bActive - aActive; 
                         
-                        // ถ้าแคมเปญถูกปิดอยู่ (PAUSED) ให้เรียงอันที่เพิ่งสร้างใหม่ล่าสุดขึ้นก่อน
+                        // แคมเปญ PAUSE เรียงอันสร้างใหม่ไว้บน
                         if (aActive === 0) {
                             const timeA = a.created_time ? new Date(a.created_time).getTime() : 0;
                             const timeB = b.created_time ? new Date(b.created_time).getTime() : 0;
@@ -1445,7 +1456,6 @@
                         const isActive = camp.status === 'ACTIVE';
                         const budget = camp.daily_budget ? (camp.daily_budget / 100).toLocaleString() : 'N/A'; 
                         
-                        // เช็คว่าเป็นแคมเปญใหม่ภายใน 24 ชม. หรือไม่
                         const createdDate = camp.created_time ? new Date(camp.created_time) : new Date(0);
                         const isNew = (new Date() - createdDate) < 24 * 60 * 60 * 1000;
                         const newBadge = isNew && !isActive ? `<span class="ml-2 px-1.5 py-0.5 bg-pink-100 text-pink-600 text-[10px] font-black rounded-full shadow-sm">NEW</span>` : '';
