@@ -462,7 +462,39 @@
                             <h2 class="text-2xl font-bold text-gray-800" data-i18n="ruleTitle">กฎอัตโนมัติ (Automated Rules)</h2>
                             <p class="text-gray-500" data-i18n="ruleSubtitle">ตั้งเงื่อนไขเพื่อเปิด/ปิดแอด หรือปรับงบอัตโนมัติตาม KPI</p>
                         </div>
-                        <button onclick="window.addNewRuleBlock()" class="bg-white border-2 border-fb-blue text-fb-blue px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-fb-light transition flex items-center"><i class="fa-solid fa-plus mr-2"></i> <span data-i18n="btnAddRule">เพิ่มกฎใหม่</span></button>
+                        <div class="flex gap-2">
+                            <button onclick="window.runAutomatedRules()" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-600 transition flex items-center">
+                                <i class="fa-solid fa-play mr-2"></i> รันกฎเดี๋ยวนี้
+                            </button>
+                            <button onclick="window.addNewRuleBlock()" class="bg-white border-2 border-fb-blue text-fb-blue px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-fb-light transition flex items-center">
+                                <i class="fa-solid fa-plus mr-2"></i> <span data-i18n="btnAddRule">เพิ่มกฎใหม่</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Auto Bot Panel -->
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5 max-w-4xl flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-indigo-500 text-white rounded-full flex items-center justify-center text-2xl shadow-inner">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-black text-indigo-900 text-base">ระบบบอทอัตโนมัติ (Auto-Bot)</h3>
+                                <p class="text-xs text-indigo-700 font-medium mt-0.5" id="botStatusText">สถานะ: <span class="text-gray-500 font-bold">🔴 ปิดการทำงาน</span> (ระบบจะทำงานเมื่อเปิดหน้านี้ทิ้งไว้)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <select id="autoBotInterval" class="border border-indigo-300 rounded-lg p-2.5 text-sm outline-none text-indigo-900 font-bold bg-white shadow-sm" onchange="window.updateBotInterval()">
+                                <option value="5">สแกนทุกๆ 5 นาที</option>
+                                <option value="15">สแกนทุกๆ 15 นาที</option>
+                                <option value="30">สแกนทุกๆ 30 นาที</option>
+                                <option value="60">สแกนทุกๆ 1 ชั่วโมง</option>
+                            </select>
+                            <div class="relative inline-block w-14 align-middle select-none transition duration-200 ease-in mt-1">
+                                <input type="checkbox" id="toggleAutoBot" onchange="window.toggleAutoBot(this.checked)" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                <label for="toggleAutoBot" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer" style="width: 56px;"></label>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="rulesListContainer" class="space-y-6">
@@ -510,6 +542,7 @@
                                                 <option value="cost_per_purchase" data-i18n="kpiCostPur">Cost per Purchase (ต้นทุนซื้อ)</option>
                                                 <option value="cost_per_msg" data-i18n="kpiCostMsg">Cost per Message (ต้นทุนทัก)</option>
                                                 <option value="roas">ROAS</option>
+                                                <option value="purchases">จำนวนการซื้อ (Purchases)</option>
                                                 <option value="spend" data-i18n="kpiSpend">Spend (ยอดใช้จ่าย)</option>
                                                 <option value="ctr">CTR</option>
                                                 <option value="cpm">CPM</option>
@@ -1113,27 +1146,22 @@
             return 0;
         }
 
-        window.populateCreativeDropdown = function() {
+        function populateCreativeDropdown() {
             const sel = document.getElementById('creativeCampaignSelector');
             if(!sel) return;
             sel.innerHTML = `<option value="">-- ${currentLang === 'th' ? 'เลือกแคมเปญ' : 'Select Campaign'} --</option>`;
-            
             if(globalCampaignsData && globalCampaignsData.length > 0) {
-                // สร้างกลุ่มแบ่งหมวดหมู่ให้ชัดเจน
                 const activeGroup = document.createElement('optgroup');
                 activeGroup.label = currentLang === 'th' ? '🟢 แคมเปญที่เปิดใช้งานอยู่ (Active)' : '🟢 Active Campaigns';
                 
                 const pausedGroup = document.createElement('optgroup');
                 pausedGroup.label = currentLang === 'th' ? '⚫ แคมเปญที่ปิดอยู่ (Paused)' : '⚫ Paused Campaigns';
 
-                // คัดลอกและเรียงลำดับตามยอดขาย (เพื่อให้แคมเปญที่ขายดีสุดอยู่บนสุดของแต่ละกลุ่ม)
                 let sortedCamps = [...globalCampaignsData].sort((a,b) => b.purchases - a.purchases);
 
                 sortedCamps.forEach(camp => {
                     const statusIcon = camp.status === 'ACTIVE' ? '🟢' : '⚫';
                     const opt = new Option(`${statusIcon} ${camp.name}`, camp.id);
-                    
-                    // แยกใส่กลุ่มตามสถานะ
                     if (camp.status === 'ACTIVE') {
                         activeGroup.appendChild(opt);
                     } else {
@@ -1141,25 +1169,17 @@
                     }
                 });
 
-                // นำกลุ่มมายัดใส่ Dropdown (เอา Active ขึ้นก่อนเสมอ)
                 if (activeGroup.children.length > 0) sel.appendChild(activeGroup);
                 if (pausedGroup.children.length > 0) sel.appendChild(pausedGroup);
                 
-                // ให้ระบบเลือกแคมเปญที่ Active อันแรกเป็นค่าเริ่มต้น
                 const firstActive = sortedCamps.find(c => c.status === 'ACTIVE');
                 if(firstActive) sel.value = firstActive.id;
             }
-        };
+        }
 
-        window.analyzeCampaign = function(campId) {
-            window.switchTab('creative');
+        function analyzeCampaign(campId) {
+            switchTab('creative');
             const sel = document.getElementById('creativeCampaignSelector');
-            if(sel) {
-                sel.value = campId;
-                window.fetchCampaignCreatives();
-            }
-        };
-
         window.fetchCampaignCreatives = async function() {
             const campId = document.getElementById('creativeCampaignSelector').value;
             if(!campId) return window.showToast(currentLang === 'th' ? "กรุณาเลือกแคมเปญก่อน" : "Please select a campaign first");
@@ -1187,39 +1207,27 @@
             }
         };
 
-        window.syncData = async function() {
+        window.syncData = async function(silent = false) {
             const icon = document.getElementById('syncIcon');
             icon.classList.add('fa-spin');
             
             const token = loggedInEmployee ? loggedInEmployee.fb_token : null;
             const selector = document.getElementById('adAccountSelector');
             const adAcc = selector ? selector.value : null;
-            
             if(!token || !adAcc) {
-                window.showToast(currentLang === 'th' ? "กรุณาใส่ Token และระบุบัญชี Ad Account" : "Please set Token and Ad Account");
+                showToast(currentLang === 'th' ? "กรุณาใส่ Token และระบุบัญชี Ad Account" : "Please set Token and Ad Account");
                 icon.classList.remove('fa-spin');
-                window.switchTab('settings');
+                switchTab('settings');
                 return;
             }
-
             const formattedAdAcc = adAcc.startsWith('act_') ? adAcc : 'act_' + adAcc;
-
             try {
                 const urlAcc = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?level=account&fields=spend,cpm,ctr,actions,action_values&date_preset=${currentDatePreset}&use_account_attribution_setting=true&access_token=${token}`;
                 const urlCampInfo = `https://graph.facebook.com/v21.0/${formattedAdAcc}/campaigns?fields=id,name,status,daily_budget,created_time&limit=500&access_token=${token}`;
                 const urlCampIns = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?level=campaign&fields=campaign_id,spend,reach,impressions,clicks,cpm,ctr,actions,action_values&date_preset=${currentDatePreset}&use_account_attribution_setting=true&limit=500&access_token=${token}`;
-
-                const [dataAcc, dataCampInfo, dataCampIns] = await Promise.all([
-                    fetchFB(urlAcc),
-                    fetchFB(urlCampInfo),
-                    fetchFB(urlCampIns)
-                ]);
-
+                const [dataAcc, dataCampInfo, dataCampIns] = await Promise.all([fetchFB(urlAcc), fetchFB(urlCampInfo), fetchFB(urlCampIns)]);
                 const insMap = {};
-                if (dataCampIns.data) {
-                    dataCampIns.data.forEach(ins => { insMap[ins.campaign_id] = ins; });
-                }
-                
+                if (dataCampIns.data) { dataCampIns.data.forEach(ins => { insMap[ins.campaign_id] = ins; }); }
                 globalCampaignsData = (dataCampInfo.data || []).map(camp => {
                     const insightsData = insMap[camp.id] ? { data: [insMap[camp.id]] } : { data: [] };
                     let purchases = 0;
@@ -1228,18 +1236,15 @@
                     }
                     return { ...camp, insights: insightsData, purchases: purchases };
                 });
-
                 if (dataAcc.data && dataAcc.data.length > 0) {
                     const ins = dataAcc.data[0];
                     const spend = parseFloat(ins.spend || 0);
                     const purchases = parseInt(getFbActionVal(ins.actions, purTypesList));
                     const msgs = parseInt(getFbActionVal(ins.actions, msgTypesList));
                     const convVal = getFbActionVal(ins.action_values, purTypesList);
-
                     const costPur = purchases > 0 ? spend / purchases : 0;
                     const costMsg = msgs > 0 ? spend / msgs : 0;
                     const roas = spend > 0 ? convVal / spend : 0;
-
                     document.getElementById('kpi-spend').innerText = '฿' + spend.toLocaleString(undefined, {minimumFractionDigits: 2});
                     document.getElementById('kpi-ctr').innerText = parseFloat(ins.ctr || 0).toFixed(2) + '%';
                     document.getElementById('kpi-cpm').innerText = '฿' + parseFloat(ins.cpm || 0).toFixed(2);
@@ -1254,24 +1259,18 @@
                     document.getElementById('kpi-cost-pur').innerText = '฿0.00';
                     document.getElementById('kpi-cost-msg').innerText = '฿0.00';
                 }
-
-                window.populateABDropdowns();
-                window.populateCreativeDropdown(); 
-                
+                populateABDropdowns();
+                populateCreativeDropdown(); 
                 const tbody = document.getElementById('campaignTableBody');
                 tbody.innerHTML = ''; 
-                
                 let chartItems = [];
                 let winnerCampCount = 0;
                 let loserCampCount = 0;
-
                 if (globalCampaignsData.length > 0) {
                     globalCampaignsData.sort((a, b) => {
                         const aActive = a.status === 'ACTIVE' ? 1 : 0;
                         const bActive = b.status === 'ACTIVE' ? 1 : 0;
                         if (aActive !== bActive) return bActive - aActive; 
-                        
-                        // แคมเปญ PAUSE เรียงอันสร้างใหม่ไว้บน
                         if (aActive === 0) {
                             const timeA = a.created_time ? new Date(a.created_time).getTime() : 0;
                             const timeB = b.created_time ? new Date(b.created_time).getTime() : 0;
@@ -1279,21 +1278,16 @@
                         }
                         return b.purchases - a.purchases; 
                     });
-                    
                     let sumSpend = 0, sumReach = 0, sumImps = 0, sumClicks = 0;
                     let sumMsgs = 0, sumPurchases = 0, sumConvVal = 0;
-
                     globalCampaignsData.forEach((camp, index) => {
                         const isActive = camp.status === 'ACTIVE';
                         const budget = camp.daily_budget ? (camp.daily_budget / 100).toLocaleString() : 'N/A'; 
-                        
                         const createdDate = camp.created_time ? new Date(camp.created_time) : new Date(0);
                         const isNew = (new Date() - createdDate) < 24 * 60 * 60 * 1000;
                         const newBadge = isNew && !isActive ? `<span class="ml-2 px-1.5 py-0.5 bg-pink-100 text-pink-600 text-[10px] font-black rounded-full shadow-sm">NEW</span>` : '';
-                        
                         let spendNum = 0, reach = 0, cpm = 0, ctr = 0, impressions = 0, clicks = 0;
                         let purchases = 0, costPur = 0, convVal = 0, roas = 0, msgs = 0, costMsg = 0;
-                        
                         if (camp.insights && camp.insights.data && camp.insights.data.length > 0) {
                             const cIns = camp.insights.data[0];
                             spendNum = parseFloat(cIns.spend || 0);
@@ -1302,30 +1296,33 @@
                             clicks = parseInt(cIns.clicks || 0);
                             cpm = parseFloat(cIns.cpm || 0);
                             ctr = parseFloat(cIns.ctr || 0);
-
                             purchases = parseInt(getFbActionVal(cIns.actions, purTypesList));
                             msgs = parseInt(getFbActionVal(cIns.actions, msgTypesList));
                             convVal = getFbActionVal(cIns.action_values, purTypesList);
-
                             costPur = purchases > 0 ? spendNum / purchases : 0;
                             costMsg = msgs > 0 ? spendNum / msgs : 0;
                             roas = spendNum > 0 ? convVal / spendNum : 0;
                         }
-
                         sumSpend += spendNum; sumReach += reach; sumImps += impressions; sumClicks += clicks;
                         sumPurchases += purchases; sumMsgs += msgs; sumConvVal += convVal;
+                        
+                        // บันทึกค่าเก็บไว้สำหรับการประมวลผล Automated Rules
+                        camp.spendNum = spendNum;
+                        camp.purchases = purchases;
+                        camp.roasNum = roas;
+                        camp.costPurNum = costPur;
+                        camp.costMsgNum = costMsg;
+                        camp.ctrNum = ctr;
+                        camp.cpmNum = cpm;
                         
                         if (spendNum > 0 || reach > 0) {
                             chartItems.push({ name: camp.name, spend: spendNum, cost_msg: costMsg, cost_pur: costPur, roas: roas, ctr: ctr, cpm: cpm });
                         }
-
                         const adSpendPct = convVal > 0 ? (spendNum / convVal) * 100 : 0;
                         const closingRate = msgs > 0 ? (purchases / msgs) * 100 : 0;
 
-                        // AI Analysis Logic
                         let aiType = 'medium';
                         let aiBadgeHtml = '';
-
                         if (purchases > 0 && roas >= 2.0) {
                             aiType = 'good';
                             if(isActive) winnerCampCount++;
@@ -1337,7 +1334,6 @@
                         } else {
                             aiBadgeHtml = `<span class="px-2 py-1 bg-yellow-50 text-yellow-600 rounded text-[11px] font-bold border border-yellow-200 shadow-sm"><i class="fa-solid fa-eye"></i> รอดูผลลัพธ์</span>`;
                         }
-
                         if(spendNum === 0) aiBadgeHtml = `<span class="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[11px] font-bold border border-gray-200">ยังไม่มีข้อมูล</span>`;
 
                         const tr = document.createElement('tr');
@@ -1345,7 +1341,7 @@
                         tr.innerHTML = `
                             <td class="p-3 text-center">
                                 <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" id="toggle_c${index}" ${isActive ? 'checked' : ''} onchange="window.toggleRealCampaign('${camp.id}', this.checked)" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                    <input type="checkbox" id="toggle_c${index}" ${isActive ? 'checked' : ''} onchange="toggleRealCampaign('${camp.id}', this.checked)" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
                                     <label for="toggle_c${index}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                                 </div>
                             </td>
@@ -1353,7 +1349,7 @@
                             <td class="p-3 font-semibold ${isActive ? 'text-fb-blue' : 'text-gray-500'} max-w-[200px]" title="${camp.name}">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="truncate block">${camp.name}${newBadge}</span>
-                                    <button onclick="window.analyzeCampaign('${camp.id}')" class="text-purple-500 hover:text-white hover:bg-purple-500 p-1.5 rounded transition" title="เจาะลึกสื่อโฆษณา"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                                    <button onclick="analyzeCampaign('${camp.id}')" class="text-purple-500 hover:text-white hover:bg-purple-500 p-1.5 rounded transition" title="เจาะลึกสื่อโฆษณา"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
                                 </div>
                             </td>
                             <td class="p-3">
@@ -1379,10 +1375,7 @@
                         `;
                         tbody.appendChild(tr);
                     });
-
-                    // Update AI Summary Banner
                     document.getElementById('campAiSummary').innerText = `พบแคมเปญที่ควร "สร้างซ้ำ" ${winnerCampCount} ตัว และควร "ปิด" ${loserCampCount} ตัว`;
-
                     const tCpm = sumImps > 0 ? (sumSpend / sumImps) * 1000 : 0;
                     const tCtr = sumImps > 0 ? (sumClicks / sumImps) * 100 : 0;
                     const tCostMsg = sumMsgs > 0 ? sumSpend / sumMsgs : 0;
@@ -1390,7 +1383,6 @@
                     const tRoas = sumSpend > 0 ? sumConvVal / sumSpend : 0;
                     const tAdSpendPct = sumConvVal > 0 ? (sumSpend / sumConvVal) * 100 : 0;
                     const tClosingRate = sumMsgs > 0 ? (sumPurchases / sumMsgs) * 100 : 0;
-
                     const totalTr = document.createElement('tr');
                     totalTr.className = "bg-fb-light border-t-2 border-fb-blue font-bold text-gray-800 sticky bottom-0 z-10"; 
                     totalTr.innerHTML = `
@@ -1412,17 +1404,14 @@
                         <td class="p-3 text-right text-purple-700 bg-fb-light">${tClosingRate.toFixed(2)}%</td>
                     `;
                     tbody.appendChild(totalTr);
-
                     globalChartData = chartItems;
-                    window.renderDashboardChart();
-
+                    renderDashboardChart();
                 } else {
                     tbody.innerHTML = '<tr><td colspan="15" class="p-6 text-center text-gray-500">ไม่พบแคมเปญในช่วงเวลานี้</td></tr>';
                     globalChartData = [];
-                    window.renderDashboardChart();
+                    renderDashboardChart();
                     document.getElementById('campAiSummary').innerText = `รอแคมเปญทำงานเพื่อวิเคราะห์ข้อมูล`;
                 }
-
                 try {
                     const urlDemo = `https://graph.facebook.com/v21.0/${formattedAdAcc}/insights?breakdowns=age,gender&fields=spend,actions,action_values&date_preset=${currentDatePreset}&use_account_attribution_setting=true&limit=500&access_token=${token}`;
                     const dataDemo = await fetchFB(urlDemo);
@@ -1437,25 +1426,13 @@
 
                 const now = new Date();
                 document.getElementById('lastSyncTime').innerText = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
-                window.showToast(currentLang === 'th' ? "ดึงและวิเคราะห์ข้อมูลสำเร็จ!" : "Data synced & analyzed!");
+                if(!silent) window.showToast(currentLang === 'th' ? "ดึงและวิเคราะห์ข้อมูลสำเร็จ!" : "Data synced & analyzed!");
 
             } catch (err) {
                 console.error(err);
                 let errMsgTh = "API Error: " + err.message;
-                if (err.message.includes("ads_management") || err.message.includes("ads_read")) {
-                    errMsgTh = "Token ขาดสิทธิ์ (กรุณาตรวจสอบว่ามีสิทธิ์และยังไม่หมดอายุ)";
-                } else if (err.message.includes("Invalid OAuth access token") || err.message.includes("Malformed access token")) {
-                    errMsgTh = "Token ไม่ถูกต้อง หรือหมดอายุแล้ว";
-                } else if (err.message.includes("does not exist") || err.message.includes("Invalid parameter")) {
-                    errMsgTh = "ไม่พบ Ad Account นี้ (ตรวจสอบตัวเลขให้ถูกต้อง)";
-                }
-                window.showToast(currentLang === 'th' ? errMsgTh : "Error: " + err.message);
-            }
-            
-            icon.classList.remove('fa-spin');
-        };
 
-        window.toggleRealCampaign = async function(campaignId, isActive) {
+        async function toggleRealCampaign(campaignId, isActive) {
             const token = loggedInEmployee.fb_token;
             const status = isActive ? 'ACTIVE' : 'PAUSED';
             try {
@@ -1466,30 +1443,25 @@
                 });
                 const data = await res.json();
                 if (data.error) throw new Error(data.error.message);
-                window.showToast(`เปลี่ยนสถานะเป็น ${status} แล้ว`);
+                showToast(`เปลี่ยนสถานะเป็น ${status} แล้ว`);
             } catch(err) {
-                window.showToast("Error: " + err.message);
+                showToast("Error: " + err.message);
             }
-        };
+        }
 
-        window.renderCreativeAI = async function(adsInsights, token) {
+        async function renderCreativeAI(adsInsights, token) {
             const container = document.getElementById('creativeCardsContainer');
             container.innerHTML = '';
-            
             window.lastAnalyzedAds = [];
-            
             if(!adsInsights || adsInsights.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 col-span-3 text-center">ไม่พบข้อมูลโฆษณาในช่วงเวลานี้</p>';
                 document.getElementById('crSummaryText').innerText = `วิเคราะห์เสร็จสิ้น`;
                 document.getElementById('crAiRec').innerText = `แคมเปญนี้ยังไม่มีโฆษณาที่มียอดใช้จ่าย`;
                 return;
             }
-
             let activeAds = adsInsights.filter(ad => parseFloat(ad.spend || 0) > 0);
-            
             activeAds.sort((a,b) => parseFloat(b.spend) - parseFloat(a.spend));
             const topAds = activeAds; 
-            
             let creativesData = {};
             let storiesData = {};
             if (topAds.length > 0) {
@@ -1497,34 +1469,27 @@
                     const adIds = topAds.map(ad => ad.ad_id).join(',');
                     const urlTopAds = `https://graph.facebook.com/v21.0/?ids=${adIds}&fields=creative{effective_object_story_id,thumbnail_url,image_url,object_story_spec,asset_feed_spec}&access_token=${token}`;
                     creativesData = await fetchFB(urlTopAds);
-
                     const storyIds = [];
                     for (const adId in creativesData) {
                         const cr = creativesData[adId].creative;
                         if (cr && cr.effective_object_story_id) storyIds.push(cr.effective_object_story_id);
                     }
-
                     if (storyIds.length > 0) {
                         const urlStories = `https://graph.facebook.com/v21.0/?ids=${storyIds.join(',')}&fields=full_picture,picture,attachments&access_token=${token}`;
                         storiesData = await fetchFB(urlStories).catch(() => ({})); 
                     }
                 } catch(e) { console.warn("Creative fetch error", e); }
             }
-
             let winnerCount = 0, loserCount = 0;
-
             activeAds.forEach(ins => {
                 const spend = parseFloat(ins.spend || 0);
                 const purchases = parseInt(getFbActionVal(ins.actions, purTypesList));
                 const convVal = getFbActionVal(ins.action_values, purTypesList);
-
                 const costPur = purchases > 0 ? spend / purchases : 0;
                 const roas = spend > 0 ? convVal / spend : 0;
-
                 if (purchases > 0 && roas >= 2.0) winnerCount++;
                 else if ((spend > 400 && purchases === 0) || (roas > 0 && roas < 1.5 && spend > 300)) loserCount++;
             });
-
             const cardsHtml = topAds.map(ins => {
                 const adName = ins.ad_name || 'ไม่ทราบชื่อ';
                 const adId = ins.ad_id;
@@ -1533,27 +1498,21 @@
                 const reach = parseInt(ins.reach || 0);
                 const cpm = parseFloat(ins.cpm || 0);
                 const ctr = parseFloat(ins.ctr || 0);
-                
                 const purchases = parseInt(getFbActionVal(ins.actions, purTypesList));
                 const msgs = parseInt(getFbActionVal(ins.actions, msgTypesList));
                 const convVal = getFbActionVal(ins.action_values, purTypesList);
-                
                 const costPur = purchases > 0 ? spend / purchases : 0;
                 const costMsg = msgs > 0 ? spend / msgs : 0;
                 const roas = spend > 0 ? convVal / spend : 0;
-                
                 const adSpendPct = convVal > 0 ? (spend / convVal) * 100 : 0;
                 const closingRate = msgs > 0 ? (purchases / msgs) * 100 : 0;
-
                 let imageUrl = 'https://placehold.co/400x300/1f2937/64748b?text=Ad+Creative';
                 const adDataObj = creativesData[adId];
                 let isVideo = false;
-
                 if (adDataObj && adDataObj.creative) {
                     const cr = adDataObj.creative;
                     let bestImage = null;
                     const storyId = cr.effective_object_story_id;
-
                     if (storyId && storiesData[storyId]) {
                         const story = storiesData[storyId];
                         bestImage = story.full_picture || story.picture;
@@ -1572,53 +1531,25 @@
                             if (spec.link_data.child_attachments && spec.link_data.child_attachments.length > 0) bestImage = spec.link_data.child_attachments[0].image_url;
                         }
                     }
-                    if (!bestImage && cr.asset_feed_spec) {
-                        if (cr.asset_feed_spec.videos && cr.asset_feed_spec.videos.length > 0) {
-                            isVideo = true; bestImage = cr.asset_feed_spec.videos[0].thumbnail_url || cr.asset_feed_spec.videos[0].image_url;
-                        } else if (cr.asset_feed_spec.images && cr.asset_feed_spec.images.length > 0) {
-                            bestImage = cr.asset_feed_spec.images[0].url || cr.asset_feed_spec.images[0].image_url;
-                        }
-                    }
                     imageUrl = bestImage || cr.image_url || cr.thumbnail_url || imageUrl;
                 }
-
                 let type = 'medium';
                 if (purchases > 0 && roas >= 2.0) type = 'good';
                 else if ((spend > 400 && purchases === 0) || (roas > 0 && roas < 1.5 && spend > 300)) type = 'bad';
-
                 window.lastAnalyzedAds.push({
-                    ad_id: adId,
-                    ad_name: adName,
-                    spend: spend,
-                    reach: reach,
-                    cpm: cpm,
-                    ctr: ctr,
-                    msgs: msgs,
-                    costMsg: costMsg,
-                    purchases: purchases,
-                    costPur: costPur,
-                    convVal: convVal,
-                    roas: roas,
-                    adSpendPct: adSpendPct,
-                    closingRate: closingRate,
-                    computedImage: imageUrl,
-                    computedType: type
+                    ad_id: adId, ad_name: adName, spend, reach, cpm, ctr, msgs, costMsg, purchases, costPur, convVal, roas, adSpendPct, closingRate, computedImage: imageUrl, computedType: type
                 });
-
                 let badge, color, icon, btnColor, border, btnText, actionOnClick;
                 if(type === 'good') { 
                     badge = "🟢 ดีมาก (Winner)"; color = "emerald"; icon = "fa-crown text-yellow-400"; border = "border-emerald-200"; btnColor = "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"; 
-                    btnText = "ดูรายละเอียดสื่อ"; actionOnClick = `window.viewCreativeDetails('${adId}')`;
-                }
-                else if (type === 'bad') { 
+                    btnText = "ดูรายละเอียดสื่อ"; actionOnClick = `viewCreativeDetails('${adId}')`;
+                } else if (type === 'bad') { 
                     badge = "🔴 แย่ (Loser)"; color = "red"; icon = "fa-circle-xmark text-red-400"; border = "border-red-200"; btnColor = "bg-red-500 text-white border-red-500 hover:bg-red-600"; 
-                    btnText = "ปิดโฆษณาตัวนี้"; actionOnClick = `window.toggleRealCampaign('${adId}', false)`;
-                }
-                else { 
+                    btnText = "ปิดโฆษณาตัวนี้"; actionOnClick = `toggleRealCampaign('${adId}', false)`;
+                } else { 
                     badge = "🟡 ปานกลาง"; color = "yellow"; icon = ""; border = "border-yellow-200"; btnColor = "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"; 
-                    btnText = "ดูรายละเอียดสื่อ"; actionOnClick = `window.viewCreativeDetails('${adId}')`;
+                    btnText = "ดูรายละเอียดสื่อ"; actionOnClick = `viewCreativeDetails('${adId}')`;
                 }
-
                 return `
                     <div class="bg-white rounded-xl shadow-sm border ${border} overflow-hidden">
                         <div class="h-2 bg-${color}-500"></div>
@@ -1629,170 +1560,8 @@
                             </div>
                             <div class="relative w-full h-36 bg-gray-900 rounded-lg mb-3 border border-gray-200 overflow-hidden flex items-center justify-center">
                                 <img src="${imageUrl}" class="max-w-full max-h-full object-contain" onerror="this.src='https://placehold.co/400x300/1f2937/64748b?text=Image+Not+Found'">
-                                ${isVideo ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div class="w-12 h-12 bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-sm border border-white/20 shadow-lg">
-                                        <i class="fa-solid fa-play text-lg ml-1"></i>
-                                    </div>
-                                </div>` : ''}
+                                ${isVideo ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-12 h-12 bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-sm border border-white/20 shadow-lg"><i class="fa-solid fa-play text-lg ml-1"></i></div></div>` : ''}
                             </div>
-                            <p class="text-[11px] text-fb-blue font-bold mb-1 truncate"><i class="fa-solid fa-layer-group"></i> ${adsetName}</p>
-                            <h4 class="font-bold text-gray-800 truncate mb-4" title="${adName}">${adName}</h4>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between"><span class="text-gray-500">ROAS</span><span class="font-bold text-${type==='bad'?'red-500':(type==='good'?'emerald-600':'gray-800')}">${roas.toFixed(2)}x</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">CTR</span><span class="font-bold text-gray-800">${ctr.toFixed(2)}%</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">ต้นทุนซื้อ</span><span class="font-bold text-${type==='bad'?'red-500':(type==='good'?'emerald-600':'gray-800')}">฿${costPur.toFixed(2)}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">ยอดจ่ายสื่อนี้</span><span class="font-bold text-gray-600">฿${spend.toFixed(2)}</span></div>
-                            </div>
-                            <button onclick="${actionOnClick}" class="mt-5 w-full font-bold py-2 rounded-lg border transition shadow-sm ${btnColor}">${btnText}</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = cardsHtml;
-            document.getElementById('crSummaryText').innerText = `วิเคราะห์โฆษณาในแคมเปญนี้ทั้งหมด ${activeAds.length} ตัว`;
-            document.getElementById('crAiRec').innerText = `คำแนะนำจาก AI: พบโฆษณาที่ทำกำไรได้ดี ${winnerCount} ตัว และโฆษณาที่ขาดทุน ${loserCount} ตัว`;
-        };
-
-        window.viewCreativeDetails = function(adId) {
-            const ad = window.lastAnalyzedAds.find(a => a.ad_id === adId);
-            if(!ad) return;
-
-            document.getElementById('modalAdName').innerText = ad.ad_name;
-            document.getElementById('modalAdImage').src = ad.computedImage;
-            
-            document.getElementById('modalSpend').innerText = '฿' + ad.spend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('modalReach').innerText = ad.reach.toLocaleString();
-            document.getElementById('modalCPM').innerText = '฿' + ad.cpm.toFixed(2);
-            document.getElementById('modalCTR').innerText = ad.ctr.toFixed(2) + '%';
-            document.getElementById('modalMsgs').innerText = ad.msgs.toLocaleString();
-            document.getElementById('modalCostMsg').innerText = '฿' + ad.costMsg.toFixed(2);
-            document.getElementById('modalPurchases').innerText = ad.purchases.toLocaleString();
-            document.getElementById('modalCPA').innerText = '฿' + ad.costPur.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('modalRevenue').innerText = '฿' + ad.convVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('modalROAS').innerText = ad.roas.toFixed(2) + 'x';
-            document.getElementById('modalAdSpendPct').innerText = ad.adSpendPct.toFixed(2) + '%';
-            document.getElementById('modalClosingRate').innerText = ad.closingRate.toFixed(2) + '%';
-
-            const adviceEl = document.getElementById('modalAIAdvice');
-            const btnAction = document.getElementById('modalBtnAction');
-            const statusEl = document.getElementById('modalAdStatus');
-
-            if(ad.computedType === 'good') {
-                statusEl.innerHTML = '<span class="text-emerald-500"><i class="fa-solid fa-circle text-[8px] mr-1"></i> โฆษณาคุณภาพยอดเยี่ยม</span>';
-                adviceEl.innerHTML = "โฆษณานี้ทำผลงานได้ยอดเยี่ยมมาก! (ROAS สูง และ ต้นทุนการซื้อต่ำ) <strong>แนะนำให้เพิ่มงบประมาณหรือนำสื่อตัวนี้ไปสร้างแคมเปญใหม่ (Scale)</strong> เพื่อขยายผลลัพธ์ให้ได้ยอดขายที่เพิ่มขึ้น";
-                btnAction.innerHTML = '<i class="fa-solid fa-copy"></i> ปิดและไปเปิดสร้างซ้ำที่ Facebook';
-                btnAction.className = "flex-1 font-bold py-2.5 rounded-lg transition text-white shadow-md flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600";
-                btnAction.onclick = () => { document.getElementById('creativeModal').classList.add('hidden'); };
-            } else if (ad.computedType === 'bad') {
-                statusEl.innerHTML = '<span class="text-red-500"><i class="fa-solid fa-circle text-[8px] mr-1"></i> โฆษณาขาดทุน</span>';
-                adviceEl.innerHTML = "โฆษณานี้กำลังขาดทุน (ใช้เงินเยอะแต่ไม่ได้ยอด หรือ ROAS ต่ำมาก) <strong>ระบบแนะนำให้ปิดโฆษณานี้ทันที</strong> เพื่อหยุดเลือดไหลและป้องกันการสูญเสียเงินฟรี";
-                btnAction.innerHTML = '<i class="fa-solid fa-power-off"></i> ปิดโฆษณานี้ทันที';
-                btnAction.className = "flex-1 font-bold py-2.5 rounded-lg transition text-white shadow-md flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600";
-                btnAction.onclick = () => { window.toggleRealCampaign(ad.ad_id, false); document.getElementById('creativeModal').classList.add('hidden'); };
-            } else {
-                statusEl.innerHTML = '<span class="text-yellow-600"><i class="fa-solid fa-circle text-[8px] mr-1"></i> โฆษณาปานกลาง</span>';
-                adviceEl.innerHTML = "ผลลัพธ์อยู่ระดับปานกลาง ยังไม่ชัดเจนว่าดีหรือแย่ <strong>แนะนำให้รอดูผลลัพธ์อีก 1-2 วัน</strong> เพื่อตัดสินใจ หรือลองปรับแก้ข้อความพาดหัวโฆษณา (Copywriting) ใหม่";
-                btnAction.innerHTML = '<i class="fa-solid fa-eye"></i> ปิดและเฝ้าระวังต่อ';
-                btnAction.className = "flex-1 font-bold py-2.5 rounded-lg transition text-white shadow-md flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600";
-                btnAction.onclick = () => { document.getElementById('creativeModal').classList.add('hidden'); };
-            }
-
-            document.getElementById('creativeModal').classList.remove('hidden');
-        };
-
-        window.renderDemographics = function(data) {
-            const tbody = document.getElementById('demoTableBody');
-            tbody.innerHTML = '';
-            if(!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
-                return;
-            }
-            
-            data.sort((a,b) => parseFloat(b.spend) - parseFloat(a.spend));
-            data.slice(0, 5).forEach(row => {
-                const spend = parseFloat(row.spend || 0);
-                const purchases = parseInt(getFbActionVal(row.actions, purTypesList));
-                const convVal = getFbActionVal(row.action_values, purTypesList);
-                const roas = spend > 0 ? convVal / spend : 0;
-
-                const isGood = roas >= 2;
-                const tr = document.createElement('tr');
-                tr.className = `border-b border-gray-100 ${isGood ? 'bg-emerald-50' : ''}`;
-                tr.innerHTML = `
-                    <td class="py-3 font-medium px-2">${row.age || '-'}</td>
-                    <td class="py-3 px-2">${row.gender === 'female' ? 'หญิง' : (row.gender === 'male' ? 'ชาย' : row.gender || '-')}</td>
-                    <td class="py-3 text-right font-bold ${purchases > 0 ? 'text-fb-blue' : ''} px-2">${purchases}</td>
-                    <td class="py-3 text-right font-bold ${roas >= 2 ? 'text-emerald-600' : (roas > 0 && roas < 1 ? 'text-red-500' : 'text-gray-600')} px-2">${roas.toFixed(2)}x</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        };
-
-        window.renderPlacements = function(data) {
-            const tbody = document.getElementById('placementTableBody');
-            tbody.innerHTML = '';
-            if(!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
-                return;
-            }
-            
-            let agg = {};
-            data.forEach(row => {
-                const plat = row.publisher_platform || 'unknown';
-                const pos = row.platform_position || 'unknown';
-                const key = `${plat}_${pos}`; 
-                
-                if(!agg[key]) agg[key] = { plat: plat, pos: pos, spend: 0, purchases: 0, convVal: 0 };
-                
-                agg[key].spend += parseFloat(row.spend || 0);
-                agg[key].purchases += parseInt(getFbActionVal(row.actions, purTypesList));
-                agg[key].convVal += getFbActionVal(row.action_values, purTypesList);
-            });
-
-            const filteredKeys = Object.keys(agg).filter(k => agg[k].purchases > 0);
-
-            if(filteredKeys.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-gray-500">ยังไม่มีข้อมูลการซื้อในตำแหน่งจัดวางใดเลย</td></tr>';
-                return;
-            }
-
-            filteredKeys.sort((a,b) => agg[b].purchases - agg[a].purchases);
-
-            filteredKeys.forEach(key => {
-                const d = agg[key];
-                let avgCostPur = d.purchases > 0 ? d.spend / d.purchases : 0;
-                let finalRoas = d.spend > 0 ? d.convVal / d.spend : 0;
-
-                const isGood = finalRoas >= 2;
-                const tr = document.createElement('tr');
-                tr.className = `border-b border-gray-100 ${isGood ? 'bg-emerald-50' : ''}`;
-                
-                let pName = d.plat === 'facebook' ? 'Facebook' : (d.plat === 'instagram' ? 'Instagram' : (d.plat === 'messenger' ? 'Messenger' : (d.plat === 'audience_network' ? 'Audience Network' : d.plat)));
-                
-                let posName = d.pos;
-                if(posName === 'feed') posName = 'ฟีด (Feed)';
-                else if(posName === 'story') posName = 'สตอรี่ (Story)';
-                else if(posName === 'reels') posName = 'Reels';
-                else if(posName === 'search_results') posName = 'ผลการค้นหา (Search)';
-                else if(posName === 'instream_video') posName = 'วิดีโอในสตรีม (In-Stream)';
-                else if(posName === 'messenger_inbox') posName = 'กล่องข้อความ (Inbox)';
-                else if(posName === 'marketplace') posName = 'Marketplace';
-                else if(posName === 'explore') posName = 'หน้าสำรวจ (Explore)';
-                else if(posName === 'rewarded_video') posName = 'วิดีโอที่มีรางวัล';
-                
-                const displayName = posName !== 'unknown' ? `${pName} ${posName}` : pName;
-
-                tr.innerHTML = `
-                    <td class="py-3 font-medium px-2"><i class="fa-brands fa-${d.plat} text-gray-400 mr-1"></i> ${displayName}</td>
-                    <td class="py-3 text-center font-bold text-fb-blue px-2">${d.purchases}</td>
-                    <td class="py-3 text-right px-2 ${avgCostPur > 500 ? 'text-red-500' : ''}">฿${avgCostPur.toFixed(2)}</td>
-                    <td class="py-3 text-right font-bold ${finalRoas >= 2 ? 'text-emerald-600' : (finalRoas > 0 && finalRoas < 1 ? 'text-red-500' : 'text-gray-600')} px-2">${finalRoas.toFixed(2)}x</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        };
-
         window.populateABDropdowns = function() {
             const selA = document.getElementById('abSelectA');
             const selB = document.getElementById('abSelectB');
@@ -1811,21 +1580,135 @@
             if(globalCampaignsData.length > 1) selB.selectedIndex = 1; 
         };
 
+        // ---------- ระบบรันกฎอัตโนมัติ (Automated Rules Execution) ----------
+        window.runAutomatedRules = async function(silent = false) {
+            if (!globalCampaignsData || globalCampaignsData.length === 0) {
+                if(!silent) window.showToast("กรุณาซิงค์ข้อมูลให้สำเร็จก่อนรันกฎ");
+                return;
+            }
+            
+            const ruleCards = document.querySelectorAll('.rule-card');
+            if(ruleCards.length === 0) {
+                if(!silent) window.showToast("ยังไม่มีกฎที่ตั้งไว้");
+                return;
+            }
+
+            if(!silent) window.showToast("กำลังประมวลผลกฎทั้งหมด...");
+            let triggeredCount = 0;
+
+            for (let card of ruleCards) {
+                const action = card.querySelector('.action-select').value;
+                const conditionItems = card.querySelectorAll('.condition-item');
+                if (conditionItems.length === 0) continue;
+
+                for (let camp of globalCampaignsData) {
+                    let isMatchAll = true;
+                    
+                    // หากสั่ง "เปิดแคมเปญ" จะตรวจเฉพาะแคมเปญที่ 'ปิดอยู่' เท่านั้น
+                    if (action === 'activate' && camp.status === 'ACTIVE') isMatchAll = false;
+                    // หากสั่ง "ปิดแคมเปญ" จะตรวจเฉพาะแคมเปญที่ 'เปิดอยู่' เท่านั้น
+                    if (action === 'pause' && camp.status !== 'ACTIVE') isMatchAll = false;
+
+                    if (isMatchAll) {
+                        conditionItems.forEach(item => {
+                            const selects = item.querySelectorAll('select');
+                            const metric = selects[0].value;
+                            const operator = selects[1].value;
+                            const valInput = item.querySelector('input[type="number"]');
+                            const val = parseFloat(valInput.value) || 0;
+
+                            if (valInput.value === '') {
+                                isMatchAll = false; // ข้ามเงื่อนไขที่ไม่ได้กรอกตัวเลข
+                                return;
+                            }
+
+                            let campVal = 0;
+                            if (metric === 'spend') campVal = camp.spendNum || 0;
+                            if (metric === 'purchases') campVal = camp.purchases || 0;
+                            if (metric === 'roas') campVal = camp.roasNum || 0;
+                            if (metric === 'cost_per_purchase') campVal = camp.costPurNum || 0;
+                            if (metric === 'cost_per_msg') campVal = camp.costMsgNum || 0;
+                            if (metric === 'ctr') campVal = camp.ctrNum || 0;
+                            if (metric === 'cpm') campVal = camp.cpmNum || 0;
+
+                            // เปรียบเทียบเงื่อนไข
+                            if (operator === '>') {
+                                if (!(campVal > val)) isMatchAll = false;
+                            } else if (operator === '<') {
+                                if (!(campVal < val)) isMatchAll = false;
+                            }
+                        });
+                    }
+
+                    if (isMatchAll) {
+                        triggeredCount++;
+                        // สั่งยิง API เปลี่ยนสถานะไปที่เฟสบุ๊คทันที
+                        if (action === 'activate') {
+                            await window.toggleRealCampaign(camp.id, true);
+                        } else if (action === 'pause') {
+                            await window.toggleRealCampaign(camp.id, false);
+                        }
+                    }
+                }
+            }
+
+            if (triggeredCount > 0) {
+                window.showToast(`🤖 บอททำงานสำเร็จ! มีการเปิด/ปิดไป ${triggeredCount} แคมเปญ`);
+                setTimeout(() => window.syncData(true), 2500); // โหลดข้อมูลมาแสดงผลใหม่แบบเงียบๆ
+            } else {
+                if(!silent) window.showToast("ตรวจสอบแล้ว ไม่มีแคมเปญใดเข้าเงื่อนไข");
+            }
+        };
+
+        let autoBotTimer = null;
+
+        window.toggleAutoBot = function(isActive) {
+            const statusText = document.getElementById('botStatusText');
+            if (isActive) {
+                if(!loggedInEmployee || !loggedInEmployee.fb_token) {
+                    document.getElementById('toggleAutoBot').checked = false;
+                    return window.showToast("กรุณาตั้งค่า Token ก่อนเปิดบอท");
+                }
+                const mins = parseInt(document.getElementById('autoBotInterval').value);
+                statusText.innerHTML = `สถานะ: <span class="text-emerald-600 font-bold">🟢 กำลังเฝ้าระวัง (สแกนทุกๆ ${mins} นาที)</span>`;
+                
+                if(autoBotTimer) clearInterval(autoBotTimer);
+                
+                // สั่งรันรอบแรกทันทีแบบเงียบๆ
+                window.syncData(true).then(() => window.runAutomatedRules(true));
+
+                autoBotTimer = setInterval(async () => {
+                    await window.syncData(true);
+                    await window.runAutomatedRules(true);
+                }, mins * 60 * 1000);
+                
+                window.showToast(`🤖 บอทเริ่มทำงาน จะสแกนหาลูกค้าที่เพิ่งโอนทุก ${mins} นาที (โปรดเปิดหน้านี้ทิ้งไว้)`);
+            } else {
+                statusText.innerHTML = `สถานะ: <span class="text-gray-500 font-bold">🔴 ปิดการทำงาน</span> (ระบบจะทำงานเมื่อเปิดหน้านี้ทิ้งไว้)`;
+                if(autoBotTimer) clearInterval(autoBotTimer);
+                autoBotTimer = null;
+                window.showToast("ปิดการทำงานบอทอัตโนมัติแล้ว");
+            }
+        };
+
+        window.updateBotInterval = function() {
+            const toggle = document.getElementById('toggleAutoBot');
+            if (toggle.checked) {
+                window.toggleAutoBot(true); // Restart bot with new time
+            }
+        };
+
         window.runABTestReal = function() {
             const btn = document.getElementById('btnRunTest');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังวิเคราะห์...';
             btn.disabled = true;
-
             setTimeout(() => {
                 try {
                     const idA = document.getElementById('abSelectA').value;
                     const idB = document.getElementById('abSelectB').value;
-                    
                     const campA = globalCampaignsData.find(c => c.id === idA);
                     const campB = globalCampaignsData.find(c => c.id === idB);
-
                     if(!campA || !campB) throw new Error("Missing selection");
-
                     const extract = (camp) => {
                         let spend = 0, cpa = 0, roas = 0, ctr = 0;
                         if(camp.insights && camp.insights.data && camp.insights.data.length > 0) {
@@ -1839,271 +1722,186 @@
                         }
                         return { name: camp.name, spend, cpa, roas, ctr, status: camp.status };
                     };
-
                     const dataA = extract(campA);
                     const dataB = extract(campB);
-
                     let winner = 'A';
                     if (dataB.roas > dataA.roas && (dataB.cpa < dataA.cpa || dataA.cpa === 0)) winner = 'B';
                     else if (dataB.cpa > 0 && dataA.cpa === 0) winner = 'B';
                     if (dataA.roas === 0 && dataB.roas === 0 && dataA.cpa === 0 && dataB.cpa === 0) winner = 'TIE';
-
                     document.getElementById('abResults').classList.remove('hidden');
-                    
                     const aiDesc = document.getElementById('abAiDesc');
                     if (winner === 'TIE') aiDesc.innerText = `สูสีกัน หรือยังไม่มีข้อมูลการซื้อทั้งคู่ แนะนำให้รอดูผลลัพธ์เพิ่มเติมอีกสัก 2-3 วัน`;
-                    else if (winner === 'A') aiDesc.innerText = `✨ แคมเปญ A ชนะ! ทำผลงานได้ดีกว่า แนะนำให้โฟกัสที่แคมเปญ A`;
-                    else aiDesc.innerText = `✨ แคมเปญ B ชนะ! ทำผลงานได้ดีกว่า แนะนำให้ปิด A และโยกงบมาที่แคมเปญ B`;
-
+                    else if (winner === 'A') aiDesc.innerText = `✨ แคมเปญ A ชนะ! แนะนำให้โฟกัสที่แคมเปญ A`;
+                    else aiDesc.innerText = `✨ แคมเปญ B ชนะ! แนะนำให้ปิด A และโยกงบมาที่แคมเปญ B`;
                     const renderCard = (data, isWinner, letter) => {
                         const border = isWinner ? 'border-2 border-emerald-400' : 'border border-gray-200 opacity-80';
-                        const badge = isWinner ? '<div class="absolute top-0 right-0 bg-emerald-500 text-white px-3 py-1 rounded-bl-lg font-bold text-xs"><i class="fa-solid fa-crown"></i> WINNER</div>' : '';
-                        return `
-                            <div class="bg-white rounded-xl shadow-sm ${border} p-6 relative overflow-hidden">
-                                ${badge}
-                                <h3 class="text-lg font-bold text-gray-800 mb-1 truncate" title="${data.name}">${letter}: ${data.name}</h3>
-                                <p class="text-xs text-gray-500 mb-4">สถานะ: ${data.status}</p>
-                                <div class="space-y-3">
-                                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                                        <span class="text-gray-600 text-sm">ยอดใช้จ่าย</span><span class="font-bold text-gray-800">฿${data.spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center border-b border-gray-100 pb-2 ${isWinner ? 'bg-emerald-50 -mx-6 px-6 py-1' : 'py-1'}">
-                                        <span class="text-gray-600 text-sm">ต้นทุนซื้อ</span><span class="font-bold ${isWinner ? 'text-emerald-600' : 'text-red-500'} text-lg">฿${data.cpa.toFixed(2)}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center border-b border-gray-100 pb-2 ${isWinner ? 'bg-emerald-50 -mx-6 px-6 py-1' : 'py-1'}">
-                                        <span class="text-gray-600 text-sm">ROAS</span><span class="font-bold ${isWinner ? 'text-emerald-600' : 'text-red-500'} text-lg">${data.roas.toFixed(2)}x</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-1">
-                                        <span class="text-gray-600 text-sm">CTR</span><span class="font-bold text-gray-800">${data.ctr.toFixed(2)}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                        return `<div class="bg-white rounded-xl shadow-sm ${border} p-6 relative overflow-hidden">${isWinner ? '<div class="absolute top-0 right-0 bg-emerald-500 text-white px-3 py-1 rounded-bl-lg font-bold text-xs"><i class="fa-solid fa-crown"></i> WINNER</div>' : ''}<h3 class="text-lg font-bold text-gray-800 mb-1 truncate" title="${data.name}">${letter}: ${data.name}</h3><p class="text-xs text-gray-500 mb-4">สถานะ: ${data.status}</p><div class="space-y-3"><div class="flex justify-between items-center border-b border-gray-100 pb-2"><span class="text-gray-600 text-sm">ยอดใช้จ่าย</span><span class="font-bold text-gray-800">฿${data.spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="flex justify-between items-center border-b border-gray-100 pb-2 ${isWinner ? 'bg-emerald-50 -mx-6 px-6 py-1' : 'py-1'}"><span class="text-gray-600 text-sm">ต้นทุนซื้อ</span><span class="font-bold ${isWinner ? 'text-emerald-600' : 'text-red-500'} text-lg">฿${data.cpa.toFixed(2)}</span></div><div class="flex justify-between items-center border-b border-gray-100 pb-2 ${isWinner ? 'bg-emerald-50 -mx-6 px-6 py-1' : 'py-1'}"><span class="text-gray-600 text-sm">ROAS</span><span class="font-bold ${isWinner ? 'text-emerald-600' : 'text-red-500'} text-lg">${data.roas.toFixed(2)}x</span></div><div class="flex justify-between items-center pb-1"><span class="text-gray-600 text-sm">CTR</span><span class="font-bold text-gray-800">${data.ctr.toFixed(2)}%</span></div></div></div>`;
                     };
-
                     document.getElementById('abCardAContainer').innerHTML = renderCard(dataA, winner === 'A', 'A');
                     document.getElementById('abCardBContainer').innerHTML = renderCard(dataB, winner === 'B', 'B');
-
                 } catch (e) {
-                    window.showToast("กรุณาซิงค์ข้อมูลให้สำเร็จก่อนเปรียบเทียบ");
+                    showToast("กรุณาซิงค์ข้อมูลให้สำเร็จก่อนเปรียบเทียบ");
                 }
                 btn.innerHTML = '<i class="fa-solid fa-play mr-1"></i> เริ่มเปรียบเทียบ';
                 btn.disabled = false;
             }, 800);
+        }
+
+        // ---------- ระบบรันกฎอัตโนมัติ (Automated Rules Execution) ----------
+        window.runAutomatedRules = async function() {
+            if (!globalCampaignsData || globalCampaignsData.length === 0) {
+                return showToast("กรุณาซิงค์ข้อมูลให้สำเร็จก่อนรันกฎ");
+            }
+            
+            const ruleCards = document.querySelectorAll('.rule-card');
+            if(ruleCards.length === 0) return showToast("ยังไม่มีกฎที่ตั้งไว้");
+
+            showToast("กำลังประมวลผลกฎทั้งหมด...");
+            let triggeredCount = 0;
+
+            for (let card of ruleCards) {
+                const action = card.querySelector('.action-select').value;
+                const conditionItems = card.querySelectorAll('.condition-item');
+                if (conditionItems.length === 0) continue;
+
+                for (let camp of globalCampaignsData) {
+                    let isMatchAll = true;
+                    
+                    // หากสั่ง "เปิดแคมเปญ" จะตรวจเฉพาะแคมเปญที่ 'ปิดอยู่' เท่านั้น
+                    if (action === 'activate' && camp.status === 'ACTIVE') isMatchAll = false;
+                    // หากสั่ง "ปิดแคมเปญ" จะตรวจเฉพาะแคมเปญที่ 'เปิดอยู่' เท่านั้น
+                    if (action === 'pause' && camp.status !== 'ACTIVE') isMatchAll = false;
+
+                    if (isMatchAll) {
+                        conditionItems.forEach(item => {
+                            const selects = item.querySelectorAll('select');
+                            const metric = selects[0].value;
+                            const operator = selects[1].value;
+                            const valInput = item.querySelector('input[type="number"]');
+                            const val = parseFloat(valInput.value) || 0;
+
+                            if (valInput.value === '') {
+                                isMatchAll = false; // ข้ามเงื่อนไขที่ไม่ได้กรอกตัวเลข
+                                return;
+                            }
+
+                            let campVal = 0;
+                            if (metric === 'spend') campVal = camp.spendNum || 0;
+                            if (metric === 'purchases') campVal = camp.purchases || 0;
+                            if (metric === 'roas') campVal = camp.roasNum || 0;
+                            if (metric === 'cost_per_purchase') campVal = camp.costPurNum || 0;
+                            if (metric === 'cost_per_msg') campVal = camp.costMsgNum || 0;
+                            if (metric === 'ctr') campVal = camp.ctrNum || 0;
+                            if (metric === 'cpm') campVal = camp.cpmNum || 0;
+
+                            // เปรียบเทียบเงื่อนไข
+                            if (operator === '>') {
+                                if (!(campVal > val)) isMatchAll = false;
+                            } else if (operator === '<') {
+                                if (!(campVal < val)) isMatchAll = false;
+                            }
+                        });
+                    }
+
+                    if (isMatchAll) {
+                        triggeredCount++;
+                        // สั่งยิง API เปลี่ยนสถานะไปที่เฟสบุ๊คทันที
+                        if (action === 'activate') {
+                            await toggleRealCampaign(camp.id, true);
+                        } else if (action === 'pause') {
+                            await toggleRealCampaign(camp.id, false);
+                        }
+                    }
+                }
+            }
+
+            if (triggeredCount > 0) {
+                showToast(`รันกฎสำเร็จ! มีการอัปเดตไป ${triggeredCount} แคมเปญ`);
+                setTimeout(() => syncData(), 2500); // โหลดข้อมูลมาแสดงผลใหม่
+            } else {
+                showToast("ตรวจสอบแล้ว ไม่มีแคมเปญใดเข้าเงื่อนไข");
+            }
         };
 
-        window.addAdAccountInput = function(val = '') {
+        function addAdAccountInput(val = '') {
             const container = document.getElementById('adAccountsContainer');
             if(!container) return;
             const div = document.createElement('div');
             div.className = 'flex gap-2';
-            div.innerHTML = `
-                <input type="text" value="${val}" class="ad-account-input w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue font-mono text-sm" placeholder="เช่น act_1234567890">
-                <button onclick="window.removeAdAccountInput(this)" class="bg-red-50 text-red-500 px-4 rounded-lg hover:bg-red-100 transition" title="ลบออก"><i class="fa-solid fa-trash"></i></button>
-            `;
+            div.innerHTML = `<input type="text" value="${val}" class="ad-account-input w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue font-mono text-sm" placeholder="เช่น act_1234567890"><button onclick="this.parentElement.remove()" class="bg-red-50 text-red-500 px-4 rounded-lg hover:bg-red-100 transition" title="ลบออก"><i class="fa-solid fa-trash"></i></button>`;
             container.appendChild(div);
-        };
+        }
 
-        window.removeAdAccountInput = function(btn) {
-            const container = document.getElementById('adAccountsContainer');
-            if (container.children.length > 1) {
-                btn.parentElement.remove();
-            } else {
-                btn.parentElement.querySelector('input').value = '';
-            }
-        };
-
-        window.updateAdAccountDropdown = function() {
+        function updateAdAccountDropdown() {
             const selector = document.getElementById('adAccountSelector');
             if(!selector || !loggedInEmployee) return;
             selector.innerHTML = '';
-            
             const accounts = loggedInEmployee.fb_ad_accounts || [];
             if(accounts.length > 0) {
-                accounts.forEach(acc => {
-                    const opt = document.createElement('option');
-                    opt.value = acc;
-                    opt.text = acc;
-                    selector.appendChild(opt);
-                });
+                accounts.forEach(acc => selector.add(new Option(acc, acc)));
                 return; 
             }
-            const opt = document.createElement('option');
-            opt.value = "";
-            opt.text = "-- เพิ่ม Ad Account ในตั้งค่า --";
-            selector.appendChild(opt);
-        };
+            selector.add(new Option("-- เพิ่ม Ad Account ในตั้งค่า --", ""));
+        }
 
-        window.toggleActionInputs = function(selectEl) {
+        function toggleActionInputs(selectEl) {
             const ruleCard = selectEl.closest('.rule-card');
             const val = selectEl.value;
-            const valBox = ruleCard.querySelector('.action-value-box');
-            const resBox = ruleCard.querySelector('.action-reset-box');
-            
-            valBox.classList.add('hidden');
-            resBox.classList.add('hidden');
-            if(val === 'inc_budget' || val === 'dec_budget') valBox.classList.remove('hidden');
-            if(val === 'reset_budget') resBox.classList.remove('hidden');
-        };
+            ruleCard.querySelector('.action-value-box').classList.toggle('hidden', val !== 'inc_budget' && val !== 'dec_budget');
+            ruleCard.querySelector('.action-reset-box').classList.toggle('hidden', val !== 'reset_budget');
+        }
 
-        window.removeCondition = function(btn) {
-            const container = btn.closest('.conditions-container');
-            const item = btn.closest('.condition-item');
-            if (item) item.remove();
-            if (container && container.firstElementChild) {
-                const separator = container.firstElementChild.querySelector('.condition-separator');
-                if (separator) separator.remove();
-            }
-        };
-
-        window.addCondition = function(btn) {
-            const ruleCard = btn.closest('.rule-card');
-            const container = ruleCard.querySelector('.conditions-container');
+        function addCondition(btn) {
+            const container = btn.closest('.rule-card').querySelector('.conditions-container');
             const div = document.createElement('div');
             div.className = 'condition-item mt-3';
-            
-            const needsAnd = container.children.length > 0;
-            let andHtml = '';
-            if (needsAnd) {
-                andHtml = `
-                <div class="pl-4 border-l-2 border-gray-300 ml-4 py-1 mb-3 condition-separator">
-                    <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded" data-i18n="ruleAnd">และ (AND)</span>
-                </div>`;
-            }
-
-            div.innerHTML = `
-                ${andHtml}
-                <div class="flex items-center gap-3">
-                    <select class="w-1/3 border border-gray-300 rounded-lg p-2.5 outline-none">
-                        <option value="cost_per_purchase" data-i18n="kpiCostPur">${translations[currentLang].kpiCostPur}</option>
-                        <option value="cost_per_msg" data-i18n="kpiCostMsg">${translations[currentLang].kpiCostMsg}</option>
-                        <option value="roas">ROAS</option>
-                        <option value="spend" data-i18n="kpiSpend">${translations[currentLang].kpiSpend}</option>
-                        <option value="ctr">CTR</option>
-                        <option value="cpm">CPM</option>
-                    </select>
-                    <select class="w-1/4 border border-gray-300 rounded-lg p-2.5 outline-none">
-                        <option value=">">มากกว่า (>)</option>
-                        <option value="<">น้อยกว่า (<)</option>
-                    </select>
-                    <input type="number" placeholder="e.g. 500" class="w-1/4 border border-gray-300 rounded-lg p-2.5 outline-none">
-                    <button onclick="window.removeCondition(this)" class="text-red-500 hover:bg-red-50 p-2 rounded"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            `;
+            const andHtml = container.children.length > 0 ? '<div class="pl-4 border-l-2 border-gray-300 ml-4 py-1 mb-3"><span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">และ (AND)</span></div>' : '';
+            div.innerHTML = `${andHtml}<div class="flex items-center gap-3"><select class="w-1/3 border border-gray-300 rounded-lg p-2.5 outline-none"><option value="cost_per_purchase">Cost per Purchase</option><option value="cost_per_msg">Cost per Message</option><option value="roas">ROAS</option><option value="purchases">จำนวนการซื้อ (Purchases)</option><option value="spend">Spend (ยอดใช้จ่าย)</option><option value="ctr">CTR</option><option value="cpm">CPM</option></select><select class="w-1/4 border border-gray-300 rounded-lg p-2.5 outline-none"><option value=">">มากกว่า</option><option value="<">น้อยกว่า</option></select><input type="number" placeholder="500" class="w-1/4 border border-gray-300 rounded-lg p-2.5 outline-none"><button onclick="this.closest('.condition-item').remove()" class="text-red-500 hover:bg-red-50 p-2 rounded"><i class="fa-solid fa-trash"></i></button></div>`;
             container.appendChild(div);
-            window.updateTexts(); 
-        };
+        }
 
-        window.addNewRuleBlock = function() {
-            const container = document.getElementById('rulesListContainer');
-            const firstCard = container.querySelector('.rule-card');
-            if (firstCard) {
-                const newCard = firstCard.cloneNode(true);
-                newCard.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => input.value = '');
-                newCard.querySelector('.action-value-box').classList.add('hidden');
-                newCard.querySelector('.action-reset-box').classList.add('hidden');
-                
-                const conditionsContainer = newCard.querySelector('.conditions-container');
-                const firstCondition = conditionsContainer.querySelector('.condition-item').cloneNode(true);
-                const sep = firstCondition.querySelector('.condition-separator');
-                if(sep) sep.remove();
-                firstCondition.querySelector('input[type="number"]').value = '';
-                
-                conditionsContainer.innerHTML = '';
-                conditionsContainer.appendChild(firstCondition);
-
-                container.appendChild(newCard);
-                window.showToast("สร้างกฎใหม่แล้ว");
-                window.updateTexts();
-            }
-        };
-
-        window.removeRuleBlock = function(btn) {
-            const container = document.getElementById('rulesListContainer');
-            if (container.children.length > 1) {
-                btn.closest('.rule-card').remove();
-                window.showToast("ลบกฎเรียบร้อย");
-            } else {
-                window.showToast("ต้องมีอย่างน้อย 1 กฎ");
-            }
-        };
-
-        window.calculateBreakeven = function() {
+        function calculateBreakeven() {
             const price = parseFloat(document.getElementById('bePrice').value) || 0;
             const cost = parseFloat(document.getElementById('beCost').value) || 0;
             const shipping = parseFloat(document.getElementById('beShipping').value) || 0;
             const cod = parseFloat(document.getElementById('beCOD').value) || 0;
             const other = parseFloat(document.getElementById('beOther').value) || 0;
             const adsCost = parseFloat(document.getElementById('beAdsCost').value) || 0;
-
-            if (price === 0) return window.showToast("กรุณาใส่ราคาขายเพื่อคำนวณ");
-
+            if (price === 0) return showToast("กรุณาใส่ราคาขายเพื่อคำนวณ");
             const totalCost = cost + shipping + cod + other;
             const targetCpa = price - totalCost;
             const targetRoas = totalCost > 0 ? price / totalCost : 0;
             const netProfit = targetCpa - adsCost;
+            document.getElementById('resTotalCost').innerText = '฿' + totalCost.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('resProfit').innerText = '฿' + targetCpa.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('resTargetROAS').innerText = targetRoas.toFixed(2) + 'x';
+            document.getElementById('resNetProfit').innerText = '฿' + netProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+            showToast("คำนวณสำเร็จ!");
+        }
 
-            document.getElementById('resTotalCost').innerText = '฿' + totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            const profitEl = document.getElementById('resProfit');
-            profitEl.innerText = '฿' + targetCpa.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            profitEl.className = targetCpa > 0 ? 'text-3xl font-bold text-gray-700' : 'text-3xl font-bold text-red-500';
-
-            const roasEl = document.getElementById('resTargetROAS');
-            roasEl.innerText = targetRoas > 0 ? targetRoas.toFixed(2) + 'x' : '0.00x';
-
-            const netProfitEl = document.getElementById('resNetProfit');
-            netProfitEl.innerText = '฿' + netProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            netProfitEl.className = (adsCost > 0 && netProfit < 0) ? 'text-3xl font-bold text-red-500' : 'text-3xl font-bold text-emerald-600';
-
-            window.showToast("คำนวณสำเร็จ!");
-        };
-
-        window.clearBreakevenData = function() {
+        function clearBreakevenData() {
             ['bePrice', 'beCost', 'beShipping', 'beCOD', 'beOther', 'beAdsCost'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('resTotalCost').innerText = '฿0.00';
             document.getElementById('resProfit').innerText = '฿0.00';
-            document.getElementById('resProfit').className = 'text-3xl font-bold text-gray-700';
             document.getElementById('resTargetROAS').innerText = '0.00x';
             document.getElementById('resNetProfit').innerText = '฿0.00';
-            document.getElementById('resNetProfit').className = 'text-3xl font-bold text-emerald-600';
-            window.showToast("ล้างข้อมูลเรียบร้อยแล้ว");
-        };
+        }
 
-        window.saveToken = async function() {
+        async function saveToken() {
             if(!loggedInEmployee) return;
             const token = document.getElementById('fbTokenInput').value.trim();
-            const accountInputs = document.querySelectorAll('.ad-account-input');
-            const accounts = [];
-            
-            accountInputs.forEach(input => {
-                const val = input.value.trim();
-                if(val) accounts.push(val);
-            });
-            
+            const accounts = Array.from(document.querySelectorAll('.ad-account-input')).map(i => i.value.trim()).filter(v => v);
             if(token && accounts.length > 0) {
-                const originalBtnHtml = document.querySelector('button[onclick="window.saveToken()"]').innerHTML;
-                document.querySelector('button[onclick="window.saveToken()"]').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังบันทึก...';
-                
                 loggedInEmployee.fb_token = token;
                 loggedInEmployee.fb_ad_accounts = accounts;
-
-                try {
-                    await dbService.updateEmployee(loggedInEmployee.id, { fb_token: token, fb_ad_accounts: accounts });
-                    window.showToast("บันทึกข้อมูลเข้าบัญชีของคุณเรียบร้อยแล้ว!");
-                    window.updateAdAccountDropdown();
-                    setTimeout(() => { window.syncData(); }, 1000);
-                } catch(e) {
-                    console.error(e);
-                    window.showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-                }
-                
-                document.querySelector('button[onclick="window.saveToken()"]').innerHTML = originalBtnHtml;
+                await dbService.updateEmployee(loggedInEmployee.id, { fb_token: token, fb_ad_accounts: accounts });
+                showToast("บันทึกข้อมูลเรียบร้อยแล้ว!");
+                updateAdAccountDropdown();
+                setTimeout(() => syncData(), 1000);
             } else {
-                window.showToast("กรุณากรอก Token และอย่างน้อย 1 บัญชีโฆษณา");
+                showToast("กรุณากรอก Token และอย่างน้อย 1 บัญชีโฆษณา");
             }
-        };
-
+        }
     </script>
 </body>
 </html>
