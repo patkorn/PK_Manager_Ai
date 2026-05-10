@@ -383,8 +383,11 @@
 
                 <!-- SECTION: Breakeven -->
                 <div id="section-breakeven" class="hidden animate-fade-in space-y-6">
-                    <h2 class="text-2xl font-bold text-gray-800" data-i18n="breakTitle">คำนวณจุดคุ้มทุน</h2>
-                    
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800" data-i18n="breakTitle">คำนวณจุดคุ้มทุน</h2>
+                        <p class="text-gray-500" data-i18n="breakSubtitle">คำนวณต้นทุนต่อการซื้อสูงสุด (Target CPA) และ ROAS ขั้นต่ำที่ไม่ขาดทุน</p>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Form Area -->
                         <div class="col-span-1 lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -960,14 +963,13 @@
             }
         };
 
-        // --- 7. DUPLICATE CAMPAIGN (ITERATIVE CLONE) ---
+        // --- 7. DUPLICATE CAMPAIGN (ITERATIVE CLONE WITH ERROR HANDLING) ---
         window.openDuplicateModal = function() {
             const count = document.querySelectorAll('.camp-checkbox:checked').length;
             if(count === 0) return window.showToast("กรุณาติ๊กเลือกแคมเปญที่ต้องการสร้างซ้ำ");
             document.getElementById('duplicateModal').classList.remove('hidden');
         };
 
-        // --- ฟังก์ชันหลักสำหรับการก๊อปปี้พร้อมตั้งค่าล่วงหน้า ---
         window.confirmDuplicateCamps = async function() {
             if(!loggedInEmployee || !loggedInEmployee.fb_token) return window.showToast("กรุณาตั้งค่า Token ก่อน");
             
@@ -985,8 +987,8 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังโคลน (โปรดรอสักครู่)...';
             btn.disabled = true;
 
-            // ฟังก์ชันหน่วงเวลาเพื่อหลีกเลี่ยง API Limit ของ Facebook
             const delay = ms => new Promise(res => setTimeout(res, ms));
+            const copyApiVersion = 'v19.0'; // ใช้ v19.0 สำหรับการโคลนเพื่อเลี่ยงบั๊กการลบฟิลด์ของ Facebook
 
             try {
                 let successCount = 0;
@@ -995,8 +997,7 @@
                 for(let cb of checkboxes) {
                     const campId = cb.value;
                     
-                    // 1. ดึงเฉพาะชุดโฆษณา (Adsets) ของแคมเปญที่เลือกมา
-                    const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
+                    const adsetsRes = await fetch(`https://graph.facebook.com/${copyApiVersion}/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
                     const adsetsData = await adsetsRes.json();
                     
                     if(adsetsData.error) {
@@ -1007,15 +1008,14 @@
                     const activeAdsets = (adsetsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
                     for(let i=0; i<copies; i++) {
-                        await delay(1000); // หน่วงเวลา 1 วินาทีก่อนสร้างแคมเปญ ป้องกัน Limit
+                        await delay(1000); 
                         
-                        // 2. สร้างแคมเปญใหม่ โดยให้ deep_copy=false (ไม่เอา Adsets กับ Ads อัตโนมัติ เพื่อไม่ให้เฟสบุ๊คบล็อก)
                         const campParams = new URLSearchParams();
                         campParams.append('access_token', token);
                         campParams.append('status_option', 'PAUSED');
                         campParams.append('deep_copy', 'false'); 
 
-                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies`, {
+                        const campCopyRes = await fetch(`https://graph.facebook.com/${copyApiVersion}/${campId}/copies`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                             body: campParams.toString()
@@ -1030,17 +1030,16 @@
                         const newCampId = campCopyData.copied_campaign_id || campCopyData.id;
                         let adsetSuccess = true;
                         
-                        // 3. ทยอยโคลนชุดโฆษณาทีละชุด ย้ายไปแคมเปญใหม่
                         for(let adset of activeAdsets) {
-                            await delay(1000); // หน่วงเวลา 1 วินาทีก่อนโคลนแต่ละ Adset
+                            await delay(1000); 
                             
                             const adsetParams = new URLSearchParams();
                             adsetParams.append('access_token', token);
                             adsetParams.append('campaign_id', newCampId); 
-                            adsetParams.append('deep_copy', 'false'); // ดึงแค่ Adset ไม่เอา Ads
+                            adsetParams.append('deep_copy', 'false'); 
                             adsetParams.append('status_option', 'PAUSED');
                             
-                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies`, {
+                            const adsetCopyRes = await fetch(`https://graph.facebook.com/${copyApiVersion}/${adset.id}/copies`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: adsetParams.toString()
@@ -1049,40 +1048,40 @@
                             const adsetCopyData = await adsetCopyRes.json();
                             if(adsetCopyData.error) {
                                 lastError = adsetCopyData.error.error_user_msg || adsetCopyData.error.message;
+                                if(lastError.includes('targeting_optimization')) {
+                                    lastError = "แคมเปญนี้ใช้การตั้งค่ากลุ่มเป้าหมายแบบเก่าที่ Facebook API ยกเลิกแล้ว จึงไม่สามารถโคลนผ่านระบบนี้ได้ แนะนำให้สร้างใหม่บนเว็บ Facebook ครับ";
+                                }
                                 adsetSuccess = false;
                                 continue;
                             }
 
                             const newAdsetId = adsetCopyData.copied_adset_id || adsetCopyData.id;
 
-                            // เปลี่ยนตั้งค่า งบ หรือ เวลาใหม่
                             if(inputBudget || inputTime) {
-                                await delay(500); // หน่วงเวลาเบาๆ ก่อน Update
+                                await delay(500); 
                                 const updateParams = new URLSearchParams();
                                 updateParams.append('access_token', token);
                                 if(inputBudget) updateParams.append('daily_budget', Math.floor(parseFloat(inputBudget) * 100));
                                 if(inputTime) updateParams.append('start_time', Math.floor(new Date(inputTime).getTime() / 1000));
 
-                                await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}`, {
+                                await fetch(`https://graph.facebook.com/${copyApiVersion}/${newAdsetId}`, {
                                     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: updateParams.toString()
                                 });
                             }
 
-                            // 4. ดึงเฉพาะโฆษณา (Ad) ของชุดโฆษณาเก่า
                             await delay(500);
-                            const adsRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
+                            const adsRes = await fetch(`https://graph.facebook.com/${copyApiVersion}/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
                             const adsData = await adsRes.json();
                             const activeAds = (adsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
-                            // โคลนทีละชิ้นงาน ไปใส่ในชุดโฆษณาใหม่
                             for(let ad of activeAds) {
-                                await delay(1000); // หน่วงเวลา 1 วิ ต่อ 1 โฆษณา ป้องกันการโดนบล็อกแบบเด็ดขาด
+                                await delay(1000); 
                                 const adParams = new URLSearchParams();
                                 adParams.append('access_token', token);
                                 adParams.append('adset_id', newAdsetId);
                                 adParams.append('status_option', 'PAUSED');
 
-                                await fetch(`https://graph.facebook.com/v21.0/${ad.id}/copies`, {
+                                await fetch(`https://graph.facebook.com/${copyApiVersion}/${ad.id}/copies`, {
                                     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: adParams.toString()
                                 });
                             }
@@ -1154,6 +1153,7 @@
 
             if (spendChartInstance) {
                 spendChartInstance.data.labels = topItems.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name);
+                spendChartInstance.data.datasets[0].label = currentChartMetric.toUpperCase();
                 spendChartInstance.data.datasets[0].data = topItems.map(item => item[currentChartMetric]);
                 const colors = ['#1877F2', '#10B981', '#F43F5E', '#D946EF', '#8B5CF6', '#F59E0B', '#0EA5E9', '#14B8A6'];
                 spendChartInstance.data.datasets[0].backgroundColor = topItems.map((_, i) => colors[i % colors.length]);
