@@ -137,6 +137,43 @@
         </div>
     </div>
 
+    <!-- DUPLICATE SETTINGS MODAL -->
+    <div id="duplicateModal" class="fixed inset-0 bg-black/60 z-[150] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-fade-in border border-gray-100">
+            <div class="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/80">
+                <h3 class="font-bold text-lg text-gray-800"><i class="fa-solid fa-copy text-fb-blue mr-2"></i> ตั้งค่าการสร้างซ้ำแคมเปญ</h3>
+                <button onclick="document.getElementById('duplicateModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-700 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">จำนวนชุดที่ต้องการสร้างซ้ำ</label>
+                    <input type="number" id="dupInputCount" value="1" min="1" max="20" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue bg-gray-50 font-bold">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">กำหนดงบประมาณต่อวันใหม่ (บาท)</label>
+                    <p class="text-[11px] text-gray-400 mb-2">เว้นว่างไว้ หากต้องการใช้เงินเท่าแคมเปญเดิม</p>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500 font-bold pointer-events-none">฿</span>
+                        <input type="number" id="dupInputBudget" placeholder="เช่น 500" class="w-full border border-gray-300 rounded-lg p-3 pl-8 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">กำหนดวันที่และเวลาเริ่มรันแอด</label>
+                    <p class="text-[11px] text-gray-400 mb-2">เว้นว่างไว้ หากให้รันตามเวลาดั้งเดิมของแคมเปญต้นฉบับ</p>
+                    <input type="datetime-local" id="dupInputTime" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue">
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
+                    <i class="fa-solid fa-info-circle text-fb-blue mt-0.5"></i>
+                    <p class="text-xs text-fb-dark font-medium leading-relaxed">ระบบจะคัดลอกแคมเปญ ชุดโฆษณา และโฆษณาให้อย่างสมบูรณ์ พร้อมปรับใช้ตั้งค่าใหม่ แคมเปญใหม่จะอยู่ในสถานะ "ปิด (Paused)" เสมอ</p>
+                </div>
+            </div>
+            <div class="p-5 border-t border-gray-100 flex gap-3 bg-gray-50/50">
+                <button onclick="document.getElementById('duplicateModal').classList.add('hidden')" class="px-6 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold py-2.5 rounded-lg transition shadow-sm">ยกเลิก</button>
+                <button onclick="window.confirmDuplicateCamps()" class="flex-1 font-bold py-2.5 rounded-lg transition text-white shadow-md flex items-center justify-center gap-2 bg-fb-blue hover:bg-fb-dark" id="btnConfirmDup"><i class="fa-solid fa-bolt"></i> เริ่มสร้างซ้ำแคมเปญ</button>
+            </div>
+        </div>
+    </div>
+
     <!-- CREATIVE DETAILS MODAL -->
     <div id="creativeModal" class="fixed inset-0 bg-black/60 z-[150] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] animate-fade-in border border-gray-100">
@@ -332,14 +369,12 @@
                             <p class="text-gray-500" data-i18n="campSubtitle">เปิด/ปิด และแก้ไขงบประมาณแบบ Real-time</p>
                         </div>
                         
+                        <!-- ปรับปรุงแถบเครื่องมือ: เปลี่ยนเป็นปุ่มเปิด Modal แทน -->
                         <div class="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
                             <span class="text-sm font-bold text-gray-600 pl-2">เลือก <span id="campSelectedCount" class="text-fb-blue">0</span> รายการ</span>
                             <div class="h-6 w-px bg-gray-300"></div>
-                            <span class="text-sm font-medium text-gray-500">จำนวน:</span>
-                            <input type="number" id="duplicateCount" value="1" min="1" max="20" class="w-16 border border-gray-300 rounded p-1.5 text-center text-sm font-bold outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue bg-gray-50">
-                            <span class="text-sm font-medium text-gray-500 pr-1">ชุด</span>
-                            <button onclick="window.duplicateSelectedCamps(this)" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1.5 rounded-md font-bold text-sm transition shadow-sm flex items-center disabled:opacity-50" id="btnDuplicate">
-                                <i class="fa-solid fa-copy mr-1.5"></i> สร้างซ้ำ
+                            <button onclick="window.openDuplicateModal()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-1.5 rounded-md font-bold text-sm transition shadow-sm flex items-center opacity-50 pointer-events-none" id="btnDuplicate">
+                                <i class="fa-solid fa-copy mr-1.5"></i> สร้างซ้ำ (Duplicate)
                             </button>
                         </div>
                     </div>
@@ -1154,23 +1189,36 @@
             document.getElementById('campSelectedCount').innerText = count;
             
             const btnDup = document.getElementById('btnDuplicate');
-            if(count > 0) btnDup.classList.remove('opacity-50');
-            else btnDup.classList.add('opacity-50');
+            if(count > 0) {
+                btnDup.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                btnDup.classList.add('opacity-50', 'pointer-events-none');
+            }
         };
 
-        window.duplicateSelectedCamps = async function(btn) {
+        // --- เปิดหน้าต่างตั้งค่าก่อนกดสร้างซ้ำ ---
+        window.openDuplicateModal = function() {
+            const count = document.querySelectorAll('.camp-checkbox:checked').length;
+            if(count === 0) return window.showToast("กรุณาติ๊กเลือกแคมเปญที่ต้องการสร้างซ้ำ");
+            document.getElementById('duplicateModal').classList.remove('hidden');
+        };
+
+        // --- ฟังก์ชันหลักสำหรับการก๊อปปี้พร้อมตั้งค่าล่วงหน้า ---
+        window.confirmDuplicateCamps = async function() {
             if(!loggedInEmployee || !loggedInEmployee.fb_token) return window.showToast("กรุณาตั้งค่า Token ก่อนใช้งาน");
             
             const token = loggedInEmployee.fb_token;
             const checkboxes = document.querySelectorAll('.camp-checkbox:checked');
             
-            if(checkboxes.length === 0) return window.showToast("กรุณาติ๊กเลือกแคมเปญที่ต้องการสร้างซ้ำ");
-            
-            const copies = parseInt(document.getElementById('duplicateCount').value) || 1;
+            const copies = parseInt(document.getElementById('dupInputCount').value) || 1;
             if(copies < 1 || copies > 20) return window.showToast("ระบุจำนวนชุด ระหว่าง 1-20 ชุด");
 
+            const inputBudget = document.getElementById('dupInputBudget').value;
+            const inputTime = document.getElementById('dupInputTime').value;
+
+            const btn = document.getElementById('btnConfirmDup');
             const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังแยกข้อมูลสร้าง...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังโคลนแคมเปญและอัปเดตการตั้งค่า...';
             btn.disabled = true;
 
             try {
@@ -1180,7 +1228,7 @@
                 for(let cb of checkboxes) {
                     const campId = cb.value;
                     
-                    // 1. ดึงข้อมูล Adsets ทั้งหมดใน Campaign นี้
+                    // 1. ดึงข้อมูลชุดโฆษณา (Adsets) ทั้งหมดใน Campaign นี้ออกมาก่อน
                     const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
                     const adsetsData = await adsetsRes.json();
                     
@@ -1189,14 +1237,12 @@
                         continue;
                     }
                     
-                    // กรองเอาเฉพาะอันที่ไม่ถูกลบ
                     const activeAdsets = (adsetsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
                     for(let i=0; i<copies; i++) {
-                        // 2. สร้าง Campaign เปล่าขึ้นมาก่อน (ไม่คัดลอกลูกๆ)
+                        // 2. สร้าง Campaign เปล่า
                         const campParams = new URLSearchParams();
                         campParams.append('access_token', token);
-                        campParams.append('deep_copy', 'false'); // ไม่เอาลูก
                         campParams.append('status_option', 'PAUSED');
 
                         const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies`, {
@@ -1206,21 +1252,20 @@
                         });
                         
                         const campCopyData = await campCopyRes.json();
-                        
                         if(campCopyData.error) {
                             lastError = campCopyData.error.error_user_msg || campCopyData.error.message;
-                            continue; // ข้ามชุดนี้ไป
+                            continue; 
                         }
                         
                         const newCampId = campCopyData.copied_campaign_id || campCopyData.id;
-                        
-                        // 3. วนลูปก๊อปปี้ Adset เข้าไปใน Campaign ใหม่ (พร้อมดึง Ads ของ Adset นั้นๆ ไปด้วย)
                         let adsetSuccess = true;
+                        
+                        // 3. วนลูปก๊อปปี้ ชุดโฆษณา (Adset) พร้อม Ads ข้างใน (deep_copy=true) ไปใส่ในแคมเปญใหม่
                         for(let adset of activeAdsets) {
                             const adsetParams = new URLSearchParams();
                             adsetParams.append('access_token', token);
-                            adsetParams.append('deep_copy', 'true'); // ก็อปปี้ Adset พร้อม Ads ของมัน
-                            adsetParams.append('campaign_id', newCampId); // ย้ายไปใส่แคมเปญใหม่
+                            adsetParams.append('campaign_id', newCampId); 
+                            adsetParams.append('deep_copy', 'true'); // สั่งให้มันก๊อปปี้โฆษณา (Ads) ติดตามมาด้วยอัตโนมัติ
                             adsetParams.append('status_option', 'PAUSED');
                             
                             const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies`, {
@@ -1233,6 +1278,37 @@
                             if(adsetCopyData.error) {
                                 lastError = adsetCopyData.error.error_user_msg || adsetCopyData.error.message;
                                 adsetSuccess = false;
+                                continue;
+                            }
+
+                            const newAdsetId = adsetCopyData.copied_adset_id || adsetCopyData.id;
+
+                            // 4. สั่งเปลี่ยนการตั้งค่าชุดโฆษณาตามที่ผู้ใช้กรอกมา (อัปเดต งบ และ เวลาเริ่ม) ทันที
+                            if(inputBudget || inputTime) {
+                                const updateParams = new URLSearchParams();
+                                updateParams.append('access_token', token);
+                                
+                                if(inputBudget) {
+                                    // แปลงหน่วยเป็นสตางค์สำหรับ Facebook (เช่น 500 บาท = 50000)
+                                    updateParams.append('daily_budget', Math.floor(parseFloat(inputBudget) * 100));
+                                }
+                                
+                                if(inputTime) {
+                                    // แปลงวันที่เป็น UNIX Timestamp
+                                    const unixTime = Math.floor(new Date(inputTime).getTime() / 1000);
+                                    updateParams.append('start_time', unixTime);
+                                }
+
+                                const updateRes = await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                    body: updateParams.toString()
+                                });
+
+                                const updateData = await updateRes.json();
+                                if(updateData.error) {
+                                    console.warn("Update Adset Warning:", updateData.error);
+                                }
                             }
                         }
                         
@@ -1243,7 +1319,8 @@
                 }
                 
                 if(successCount > 0) {
-                    window.showToast(`สร้างซ้ำแบบแยกส่วนสำเร็จ ${successCount} ชุด!`);
+                    window.showToast(`สร้างซ้ำและตั้งค่าสำเร็จ ${successCount} ชุด!`);
+                    document.getElementById('duplicateModal').classList.add('hidden');
                     document.getElementById('selectAllCamps').checked = false;
                     window.toggleAllCamps(document.getElementById('selectAllCamps'));
                     setTimeout(() => { window.syncData(); }, 1500);
