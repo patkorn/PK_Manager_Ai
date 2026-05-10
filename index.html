@@ -137,43 +137,6 @@
         </div>
     </div>
 
-    <!-- DUPLICATE SETTINGS MODAL -->
-    <div id="duplicateModal" class="fixed inset-0 bg-black/60 z-[150] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-fade-in border border-gray-100">
-            <div class="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/80">
-                <h3 class="font-bold text-lg text-gray-800"><i class="fa-solid fa-copy text-fb-blue mr-2"></i> ตั้งค่าการสร้างซ้ำแคมเปญ</h3>
-                <button onclick="document.getElementById('duplicateModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-700 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-6 space-y-5">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">จำนวนชุดที่ต้องการสร้างซ้ำ</label>
-                    <input type="number" id="dupInputCount" value="1" min="1" max="20" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue bg-gray-50 font-bold">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">กำหนดงบประมาณต่อวันใหม่ (บาท)</label>
-                    <p class="text-[11px] text-gray-400 mb-2">เว้นว่างไว้ หากต้องการใช้เงินเท่าแคมเปญเดิม</p>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500 font-bold pointer-events-none">฿</span>
-                        <input type="number" id="dupInputBudget" placeholder="เช่น 500" class="w-full border border-gray-300 rounded-lg p-3 pl-8 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue font-bold">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">กำหนดวันที่และเวลาเริ่มรันแอด</label>
-                    <p class="text-[11px] text-gray-400 mb-2">เว้นว่างไว้ หากให้รันตามเวลาดั้งเดิมของแคมเปญต้นฉบับ</p>
-                    <input type="datetime-local" id="dupInputTime" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-fb-blue focus:ring-1 focus:ring-fb-blue">
-                </div>
-                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                    <i class="fa-solid fa-info-circle text-fb-blue mt-0.5"></i>
-                    <p class="text-xs text-fb-dark font-medium leading-relaxed">ระบบจะส่งคำสั่งให้ AI ของเฟสบุ๊คโคลนโครงสร้างแบบสมบูรณ์ 100% พร้อมอัปเดตงบและเวลาให้ แคมเปญใหม่จะอยู่ในสถานะ "ปิด (Paused)" เสมอ</p>
-                </div>
-            </div>
-            <div class="p-5 border-t border-gray-100 flex gap-3 bg-gray-50/50">
-                <button onclick="document.getElementById('duplicateModal').classList.add('hidden')" class="px-6 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold py-2.5 rounded-lg transition shadow-sm">ยกเลิก</button>
-                <button onclick="window.confirmDuplicateCamps()" class="flex-1 font-bold py-2.5 rounded-lg transition text-white shadow-md flex items-center justify-center gap-2 bg-fb-blue hover:bg-fb-dark" id="btnConfirmDup"><i class="fa-solid fa-bolt"></i> เริ่มสร้างซ้ำแคมเปญ</button>
-            </div>
-        </div>
-    </div>
-
     <!-- CREATIVE DETAILS MODAL -->
     <div id="creativeModal" class="fixed inset-0 bg-black/60 z-[150] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] animate-fade-in border border-gray-100">
@@ -366,27 +329,26 @@
                     <div class="flex justify-between items-end">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800" data-i18n="campTitle">จัดการแคมเปญ</h2>
-                            <p class="text-gray-500" data-i18n="campSubtitle">เปิด/ปิด และแก้ไขงบประมาณแบบ Real-time</p>
+                            <p class="text-gray-500" data-i18n="campSubtitle">วิเคราะห์และเปิด/ปิดแคมเปญแบบ Real-time</p>
                         </div>
-                        
-                        <div class="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
-                            <span class="text-sm font-bold text-gray-600 pl-2">เลือก <span id="campSelectedCount" class="text-fb-blue">0</span> รายการ</span>
-                            <div class="h-6 w-px bg-gray-300"></div>
-                            <button onclick="window.openDuplicateModal()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-1.5 rounded-md font-bold text-sm transition shadow-sm flex items-center opacity-50 pointer-events-none" id="btnDuplicate">
-                                <i class="fa-solid fa-copy mr-1.5"></i> สร้างซ้ำ (Duplicate)
-                            </button>
+                    </div>
+
+                    <!-- AI Summary Banner -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 flex items-center gap-4 mb-2">
+                        <div class="bg-white w-12 h-12 flex items-center justify-center rounded-full text-fb-blue shadow-sm"><i class="fa-solid fa-robot text-xl"></i></div>
+                        <div>
+                            <h3 class="font-bold text-gray-800" id="campAiSummary">AI กำลังวิเคราะห์แคมเปญ...</h3>
+                            <p class="text-xs text-gray-600 mt-1">คำแนะนำคำนวณจากยอดใช้จ่าย ต้นทุนการซื้อ (CPA) และผลตอบแทน (ROAS)</p>
                         </div>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="overflow-auto custom-scrollbar" style="max-height: calc(100vh - 220px);">
+                        <div class="overflow-auto custom-scrollbar" style="max-height: calc(100vh - 250px);">
                             <table class="w-full text-left border-collapse whitespace-nowrap relative">
                                 <thead class="sticky top-0 z-20">
                                     <tr class="bg-gray-50 text-xs text-text-muted font-bold uppercase shadow-sm border-b border-gray-200">
-                                        <th class="p-4 w-10 text-center bg-gray-50">
-                                            <input type="checkbox" id="selectAllCamps" onclick="window.toggleAllCamps(this)" class="w-4 h-4 text-fb-blue rounded cursor-pointer">
-                                        </th>
                                         <th class="p-4 w-16 text-center bg-gray-50" data-i18n="colOnOff">เปิด/ปิด</th>
+                                        <th class="p-4 bg-gray-50">คำแนะนำ AI</th>
                                         <th class="p-4 min-w-[200px] bg-gray-50" data-i18n="colName">ชื่อแคมเปญ</th>
                                         <th class="p-4 w-32 bg-gray-50" data-i18n="colBudget">งบต่อวัน</th>
                                         <th class="p-4 text-right bg-gray-50" data-i18n="colSpend">จ่ายไป</th>
@@ -813,7 +775,7 @@
                 dateToday: "Today", dateYest: "Yesterday", date7: "Last 7 Days", date14: "Last 14 Days", date30: "Last 30 Days", date3: "Last 3 Days", btnSync: "Sync Data",
                 dashTitle: "Ads Account Overview", dashSubtitle: "Last updated: ",
                 kpiSpend: "Spend", kpiCostMsg: "Cost/Msg", kpiCostPur: "Cost/Purchase", chartSpend: "SPEND PER CAMPAIGN (฿)", chartDesc: "Click a card above to change chart",
-                campTitle: "Campaign Management", campSubtitle: "Turn on/off and edit budget in real-time", btnCreate: "Create Campaign",
+                campTitle: "Campaign Management", campSubtitle: "Analyze and turn on/off campaigns in real-time", btnCreate: "Create Campaign",
                 colOnOff: "ON/OFF", colName: "CAMPAIGN NAME", colBudget: "DAILY BUDGET", colSpend: "SPEND", colResult: "PURCHASES",
                 colReach: "REACH", colCpm: "CPM", colCtr: "CTR", colMsg: "MESSAGES", colCostMsg: "COST/MSG", colCostPur: "COST/PUR", colConvVal: "REVENUE", colRoas: "ROAS", colAdSpendPct: "AD SPEND %", colClosingRate: "CLOSING %",
                 crTitle: "AI Creative Analysis", crSubtitle: "Analyze creatives to find winners and losers",
@@ -841,7 +803,7 @@
                 dateToday: "วันนี้", dateYest: "เมื่อวาน", date7: "7 วันล่าสุด", date14: "14 วันล่าสุด", date30: "30 วันล่าสุด", date3: "3 วันล่าสุด", btnSync: "ซิงค์ข้อมูล",
                 dashTitle: "ภาพรวมบัญชีโฆษณา", dashSubtitle: "อัปเดตล่าสุด: ",
                 kpiSpend: "ยอดใช้จ่าย", kpiCostMsg: "ต้นทุนทัก", kpiCostPur: "ต้นทุนซื้อ", chartSpend: "ยอดใช้จ่ายแยกตามแคมเปญ (฿)", chartDesc: "คลิกที่การ์ดด้านบนเพื่อเปลี่ยนกราฟ",
-                campTitle: "จัดการแคมเปญ", campSubtitle: "เปิด/ปิด และแก้ไขงบประมาณแบบ Real-time", btnCreate: "สร้างแคมเปญ",
+                campTitle: "จัดการแคมเปญ", campSubtitle: "วิเคราะห์และเปิด/ปิดแคมเปญแบบ Real-time", btnCreate: "สร้างแคมเปญ",
                 colOnOff: "เปิด/ปิด", colName: "ชื่อแคมเปญ", colBudget: "งบต่อวัน", colSpend: "จ่ายไป", colResult: "การซื้อ",
                 colReach: "การเข้าถึง", colCpm: "CPM", colCtr: "CTR", colMsg: "ทักแชท", colCostMsg: "ต้นทุน/ทัก", colCostPur: "ต้นทุน/ซื้อ", colConvVal: "ยอดขาย", colRoas: "ROAS", colAdSpendPct: "%ค่าแอด", colClosingRate: "%ปิดการขาย",
                 crTitle: "AI วิเคราะห์สื่อโฆษณา (Creatives)", crSubtitle: "วิเคราะห์ภาพและวิดีโอเพื่อหาตัวชนะและตัวที่ควรปิด",
@@ -861,7 +823,7 @@
                 lblPrice: "ราคาขาย", lblCost: "ต้นทุนสินค้า", lblShipping: "ค่าส่ง", lblCOD: "ค่าธรรมเนียม COD", lblOther: "ค่าใช้จ่ายอื่นๆ (แพ็คเกจ, แอดมิน)", btnCalc: "คำนวณจุดคุ้มทุน & กำไร", btnClear: "ล้างข้อมูล",
                 lblTotalCost: "ต้นทุนรวม (ไม่รวมแอด)", lblProfit: "ต้นทุนซื้อที่รับได้สูงสุด (Target CPA)", lblTargetROAS: "เป้าหมาย ROAS", breakCpaDesc: "สูตร: ราคาขาย - ต้นทุน - ค่าส่ง - COD - อื่นๆ", breakRoasDesc: "ROAS ขั้นต่ำที่ไม่ขาดทุน",
                 lblAdsCost: "ค่าแอดที่จ่ายจริง (ต่อ 1 ออเดอร์)", adsCostDesc: "ใส่ค่าแอดจริงของคุณเพื่อคำนวณ 'กำไรสุทธิ'", lblNetProfit: "กำไรสุทธิต่อออเดอร์", netProfitDesc: "กำไรหลังหักต้นทุนสินค้าและค่าแอดแล้ว",
-                setTitle: "ตั้งค่าบัญชีส่วนตัว (Settings & Token)", setSubtitle: "ใส่ Facebook Access Token เพื่อให้ระบบจัดการแอดได้", setTokenDesc: "Token ของคุณจะถูกเก็บไว้ในบัญชีส่วนตัว (ไม่ปะปนกับพนักงานคนอื่น)", btnSaveToken: "บันึก Token"
+                setTitle: "ตั้งค่าบัญชีส่วนตัว (Settings & Token)", setSubtitle: "ใส่ Facebook Access Token เพื่อให้ระบบจัดการแอดได้", setTokenDesc: "Token ของคุณจะถูกเก็บไว้ในบัญชีส่วนตัว (ไม่ปะปนกับพนักงานคนอื่น)", btnSaveToken: "บันทึก Token"
             }
         };
 
@@ -1149,193 +1111,6 @@
             }
         };
 
-        window.toggleAllCamps = function(source) {
-            const checkboxes = document.querySelectorAll('.camp-checkbox');
-            checkboxes.forEach(cb => cb.checked = source.checked);
-            window.updateCampSelectCount();
-        };
-
-        window.updateCampSelectCount = function() {
-            const count = document.querySelectorAll('.camp-checkbox:checked').length;
-            document.getElementById('campSelectedCount').innerText = count;
-            const btnDup = document.getElementById('btnDuplicate');
-            if(count > 0) {
-                btnDup.classList.remove('opacity-50', 'pointer-events-none');
-            } else {
-                btnDup.classList.add('opacity-50', 'pointer-events-none');
-            }
-        };
-
-        window.openDuplicateModal = function() {
-            const count = document.querySelectorAll('.camp-checkbox:checked').length;
-            if(count === 0) return window.showToast("กรุณาติ๊กเลือกแคมเปญที่ต้องการสร้างซ้ำ");
-            document.getElementById('duplicateModal').classList.remove('hidden');
-        };
-
-        window.confirmDuplicateCamps = async function() {
-            if(!loggedInEmployee || !loggedInEmployee.fb_token) return window.showToast("กรุณาตั้งค่า Token ก่อนใช้งาน");
-            const token = loggedInEmployee.fb_token;
-            const checkboxes = document.querySelectorAll('.camp-checkbox:checked');
-            const copies = parseInt(document.getElementById('dupInputCount').value) || 1;
-            const inputBudget = document.getElementById('dupInputBudget').value;
-            const inputTime = document.getElementById('dupInputTime').value;
-
-            const btn = document.getElementById('btnConfirmDup');
-            const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังเตรียมคำสั่ง...';
-            btn.disabled = true;
-
-            try {
-                let totalSuccess = 0;
-                let lastError = "";
-                
-                const selector = document.getElementById('adAccountSelector');
-                const adAcc = selector ? selector.value : null;
-                if(!adAcc) {
-                    window.showToast("กรุณาระบุบัญชี Ad Account ก่อนทำการคัดลอก");
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
-                    return;
-                }
-                const formattedAdAcc = adAcc.startsWith('act_') ? adAcc : 'act_' + adAcc;
-
-                for(let cb of checkboxes) {
-                    const campId = cb.value;
-
-                    // 1. ดึงชื่อแคมเปญต้นฉบับ
-                    const campRes = await fetch(`https://graph.facebook.com/v21.0/${campId}?fields=name&access_token=${token}`);
-                    const campData = await campRes.json();
-                    if(campData.error) {
-                        lastError = campData.error.error_user_msg || campData.error.message;
-                        continue;
-                    }
-                    const origCampName = campData.name || 'แคมเปญคัดลอก';
-
-                    // 2. ใช้ระบบ Async Batch Request (แก้ปัญหาแคมเปญใหญ่เกิน 30 ชิ้น และปัญหา targeting_optimization ของเฟสบุ๊ค)
-                    const batchRequests = [];
-                    for(let i=0; i<copies; i++) {
-                        batchRequests.push({
-                            method: "POST",
-                            relative_url: `${campId}/copies`,
-                            body: "deep_copy=true&status_option=PAUSED" // สั่งเฟสบุ๊คก๊อปปี้ทุกอย่าง 100%
-                        });
-                    }
-
-                    const params = new URLSearchParams();
-                    params.append('access_token', token);
-                    params.append('batch', JSON.stringify(batchRequests));
-
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> ส่งคำสั่งให้ Facebook (1/3)...';
-
-                    // ยิงคำสั่งสร้างซ้ำไปให้ Facebook จัดการหลังบ้าน
-                    const asyncRes = await fetch(`https://graph.facebook.com/v21.0/${formattedAdAcc}/async_batch_requests`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: params.toString()
-                    });
-                    
-                    const asyncData = await asyncRes.json();
-                    if(asyncData.error) {
-                        lastError = asyncData.error.error_user_msg || asyncData.error.message;
-                        continue;
-                    }
-
-                    const batchId = asyncData.id;
-                    let isFinished = false;
-                    let newCampIds = [];
-
-                    // 3. วนลูปเช็คสถานะการก๊อปปี้จาก Facebook (Polling) 
-                    for(let p=1; p<=45; p++) {
-                        await new Promise(r => setTimeout(r, 2000)); // รอ 2 วิ
-                        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Facebook กำลังโคลนโฆษณา (${p * 2} วิ)...`;
-                        
-                        const statusRes = await fetch(`https://graph.facebook.com/v21.0/${batchId}?access_token=${token}`);
-                        const statusData = await statusRes.json();
-                        
-                        if(statusData.status === 'FINISHED') {
-                            isFinished = true;
-                            if(statusData.results) {
-                                for(let r of statusData.results) {
-                                    if(r.code === 200) {
-                                        const b = JSON.parse(r.body);
-                                        if(b.copied_campaign_id) newCampIds.push(b.copied_campaign_id);
-                                        else if(b.id) newCampIds.push(b.id);
-                                    } else {
-                                        const b = JSON.parse(r.body || '{}');
-                                        lastError = b.error?.error_user_msg || b.error?.message;
-                                    }
-                                }
-                            }
-                            break;
-                        } else if (statusData.status === 'ERROR' || statusData.status === 'FAILED') {
-                            lastError = "ระบบหลังบ้านเฟสบุ๊คประมวลผลล้มเหลว";
-                            break;
-                        }
-                    }
-
-                    if(!isFinished) {
-                        lastError = "หมดเวลารอเฟสบุ๊คประมวลผล (แคมเปญอาจจะสร้างเสร็จทีหลัง)";
-                        continue;
-                    }
-
-                    // 4. สวมการตั้งค่าใหม่ (ชื่อ, งบ, เวลา) ให้แคมเปญใหม่ที่เฟสบุ๊คเพิ่งโคลนเสร็จ
-                    if(newCampIds.length > 0) {
-                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังตั้งค่างบประมาณและเวลา...';
-                        
-                        for(let i=0; i<newCampIds.length; i++) {
-                            const ncId = newCampIds[i];
-                            let newCampName = origCampName + (copies > 1 ? ` (Copy ${i+1})` : ` (Copy)`);
-                            
-                            // เปลี่ยนชื่อแคมเปญใหม่
-                            await fetch(`https://graph.facebook.com/v21.0/${ncId}?access_token=${token}`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ name: newCampName })
-                            });
-                            
-                            // ดึงชุดโฆษณามาเพื่ออัปเดต งบและเวลา
-                            if(inputBudget || inputTime) {
-                                const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${ncId}/adsets?fields=id&limit=100&access_token=${token}`);
-                                const adsetsData = await adsetsRes.json();
-                                const adsets = adsetsData.data || [];
-                                
-                                let updatePayload = {};
-                                if(inputBudget) updatePayload.daily_budget = Math.floor(parseFloat(inputBudget) * 100);
-                                if(inputTime) updatePayload.start_time = Math.floor(new Date(inputTime).getTime() / 1000);
-                                
-                                for(let adset of adsets) {
-                                    await fetch(`https://graph.facebook.com/v21.0/${adset.id}?access_token=${token}`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify(updatePayload)
-                                    });
-                                }
-                            }
-                        }
-                        totalSuccess += newCampIds.length;
-                    }
-                }
-                
-                if(totalSuccess > 0) {
-                    window.showToast(`สร้างซ้ำแบบดึงต้นฉบับ 100% พร้อมปรับแต่งสำเร็จ ${totalSuccess} แคมเปญ!`);
-                    document.getElementById('duplicateModal').classList.add('hidden');
-                    document.getElementById('selectAllCamps').checked = false;
-                    window.toggleAllCamps(document.getElementById('selectAllCamps'));
-                    setTimeout(() => { window.syncData(); }, 2000);
-                } else {
-                    let errMsg = "ไม่สามารถสร้างซ้ำได้: " + (lastError || "ไม่ทราบสาเหตุ");
-                    if(lastError.includes("Application request limit reached")) errMsg = "API Limit เต็ม กรุณารอสักครู่แล้วกดใหม่";
-                    window.showToast(errMsg);
-                }
-            } catch(e) {
-                console.error(e);
-                window.showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ API");
-            } finally {
-                btn.innerHTML = origHtml;
-                btn.disabled = false;
-            }
-        };
-
         async function fetchFB(url) {
             const res = await fetch(url);
             const data = await res.json();
@@ -1479,6 +1254,8 @@
                 tbody.innerHTML = ''; 
                 
                 let chartItems = [];
+                let winnerCampCount = 0;
+                let loserCampCount = 0;
 
                 if (globalCampaignsData.length > 0) {
                     globalCampaignsData.sort((a, b) => {
@@ -1537,18 +1314,34 @@
                         const adSpendPct = convVal > 0 ? (spendNum / convVal) * 100 : 0;
                         const closingRate = msgs > 0 ? (purchases / msgs) * 100 : 0;
 
+                        // AI Analysis Logic
+                        let aiType = 'medium';
+                        let aiBadgeHtml = '';
+
+                        if (roas >= 2.0 || (purchases > 0 && costPur < 300)) {
+                            aiType = 'good';
+                            if(isActive) winnerCampCount++;
+                            aiBadgeHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[11px] font-bold border border-emerald-200 shadow-sm"><i class="fa-solid fa-arrow-trend-up"></i> ควรสร้างซ้ำ</span>`;
+                        } else if ((spendNum > 500 && purchases === 0) || (roas > 0 && roas < 1.0 && spendNum > 300)) {
+                            aiType = 'bad';
+                            if(isActive) loserCampCount++;
+                            aiBadgeHtml = `<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[11px] font-bold border border-red-200 shadow-sm"><i class="fa-solid fa-power-off"></i> ควรปิดแคมเปญ</span>`;
+                        } else {
+                            aiBadgeHtml = `<span class="px-2 py-1 bg-yellow-50 text-yellow-600 rounded text-[11px] font-bold border border-yellow-200 shadow-sm"><i class="fa-solid fa-eye"></i> รอดูผลลัพธ์</span>`;
+                        }
+
+                        if(spendNum === 0) aiBadgeHtml = `<span class="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[11px] font-bold border border-gray-200">ยังไม่มีข้อมูล</span>`;
+
                         const tr = document.createElement('tr');
                         tr.className = "border-b border-gray-100 hover:bg-gray-50";
                         tr.innerHTML = `
-                            <td class="p-3 text-center">
-                                <input type="checkbox" class="camp-checkbox w-4 h-4 text-fb-blue rounded cursor-pointer" value="${camp.id}" onchange="window.updateCampSelectCount()">
-                            </td>
                             <td class="p-3 text-center">
                                 <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
                                     <input type="checkbox" id="toggle_c${index}" ${isActive ? 'checked' : ''} onchange="window.toggleRealCampaign('${camp.id}', this.checked)" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
                                     <label for="toggle_c${index}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                                 </div>
                             </td>
+                            <td class="p-3 text-center">${aiBadgeHtml}</td>
                             <td class="p-3 font-semibold ${isActive ? 'text-fb-blue' : 'text-gray-500'} max-w-[200px]" title="${camp.name}">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="truncate block">${camp.name}${newBadge}</span>
@@ -1559,7 +1352,7 @@
                                 <div class="flex items-center gap-2">
                                     <div class="relative w-24">
                                         <span class="absolute left-2 top-1.5 text-gray-400">฿</span>
-                                        <input type="text" value="${budget.replace(/,/g, '')}" ${!isActive ? 'disabled' : ''} class="w-full border ${isActive ? 'border-gray-300 text-gray-800' : 'border-gray-200 bg-gray-100 text-gray-400'} rounded p-1 pl-6 focus:border-fb-blue outline-none">
+                                        <input type="text" value="${budget.replace(/,/g, '')}" disabled class="w-full border border-gray-200 bg-gray-100 text-gray-500 rounded p-1 pl-6 outline-none">
                                     </div>
                                 </div>
                             </td>
@@ -1579,6 +1372,9 @@
                         tbody.appendChild(tr);
                     });
 
+                    // Update AI Summary Banner
+                    document.getElementById('campAiSummary').innerText = `พบแคมเปญที่ควร "สร้างซ้ำ" ${winnerCampCount} ตัว และควร "ปิด" ${loserCampCount} ตัว`;
+
                     const tCpm = sumImps > 0 ? (sumSpend / sumImps) * 1000 : 0;
                     const tCtr = sumImps > 0 ? (sumClicks / sumImps) * 100 : 0;
                     const tCostMsg = sumMsgs > 0 ? sumSpend / sumMsgs : 0;
@@ -1590,8 +1386,8 @@
                     const totalTr = document.createElement('tr');
                     totalTr.className = "bg-fb-light border-t-2 border-fb-blue font-bold text-gray-800 sticky bottom-0 z-10"; 
                     totalTr.innerHTML = `
-                        <td class="p-3 bg-fb-light"></td>
                         <td class="p-3 text-center bg-fb-light"></td>
+                        <td class="p-3 bg-fb-light"></td>
                         <td class="p-3 bg-fb-light">รวมทั้งหมด (Total)</td>
                         <td class="p-3 bg-fb-light"></td>
                         <td class="p-3 text-right text-fb-dark bg-fb-light">฿${sumSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
@@ -1616,6 +1412,7 @@
                     tbody.innerHTML = '<tr><td colspan="16" class="p-6 text-center text-gray-500">ไม่พบแคมเปญในช่วงเวลานี้</td></tr>';
                     globalChartData = [];
                     window.renderDashboardChart();
+                    document.getElementById('campAiSummary').innerText = `รอแคมเปญทำงานเพื่อวิเคราะห์ข้อมูล`;
                 }
 
                 try {
@@ -1632,7 +1429,7 @@
 
                 const now = new Date();
                 document.getElementById('lastSyncTime').innerText = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
-                window.showToast(currentLang === 'th' ? "ดึงข้อมูลจริงสำเร็จ!" : "Real data synced!");
+                window.showToast(currentLang === 'th' ? "ดึงและวิเคราะห์ข้อมูลสำเร็จ!" : "Data synced & analyzed!");
 
             } catch (err) {
                 console.error(err);
@@ -1877,9 +1674,9 @@
             if(ad.computedType === 'good') {
                 statusEl.innerHTML = '<span class="text-emerald-500"><i class="fa-solid fa-circle text-[8px] mr-1"></i> โฆษณาคุณภาพยอดเยี่ยม</span>';
                 adviceEl.innerHTML = "โฆษณานี้ทำผลงานได้ยอดเยี่ยมมาก! (ROAS สูง และ ต้นทุนการซื้อต่ำ) <strong>แนะนำให้เพิ่มงบประมาณหรือนำสื่อตัวนี้ไปสร้างแคมเปญใหม่ (Scale)</strong> เพื่อขยายผลลัพธ์ให้ได้ยอดขายที่เพิ่มขึ้น";
-                btnAction.innerHTML = '<i class="fa-solid fa-copy"></i> สร้างซ้ำสื่อนี้ (Duplicate)';
+                btnAction.innerHTML = '<i class="fa-solid fa-copy"></i> ปิดและเปิดสร้างซ้ำเอง';
                 btnAction.className = "flex-1 font-bold py-2.5 rounded-lg transition text-white shadow-md flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600";
-                btnAction.onclick = () => { window.showToast('ฟังก์ชัน Duplicate กำลังพัฒนาครับ'); };
+                btnAction.onclick = () => { document.getElementById('creativeModal').classList.add('hidden'); };
             } else if (ad.computedType === 'bad') {
                 statusEl.innerHTML = '<span class="text-red-500"><i class="fa-solid fa-circle text-[8px] mr-1"></i> โฆษณาขาดทุน</span>';
                 adviceEl.innerHTML = "โฆษณานี้กำลังขาดทุน (ใช้เงินเยอะแต่ไม่ได้ยอด หรือ ROAS ต่ำมาก) <strong>ระบบแนะนำให้ปิดโฆษณานี้ทันที</strong> เพื่อหยุดเลือดไหลและป้องกันการสูญเสียเงินฟรี";
