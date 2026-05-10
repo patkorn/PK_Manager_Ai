@@ -1226,17 +1226,18 @@
                         // 3. คัดลอกแคมเปญ (เอาแค่เปลือก ไม่เอาลูก)
                         let newCampName = origCampName + (copies > 1 ? ` (Copy ${i+1})` : ` (Copy)`);
                         
-                        // สร้าง Params แบบ URLSearchParams (Form Data) ชัวร์ที่สุดสำหรับ FB API
-                        let campParams = new URLSearchParams();
-                        campParams.append('access_token', token);
-                        campParams.append('deep_copy', 'false'); // สำคัญ: ส่งเป็น String 'false' ผ่าน Form Data เพื่อไม่ให้มันเอาลูกมา
-                        campParams.append('status_option', 'PAUSED');
-                        campParams.append('rename_options', JSON.stringify({ rename_strategy: "REPLACE_ALL", new_name: newCampName }));
-
-                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies`, {
+                        // แก้ไข: ใช้ ONLY_TOP_LEVEL_RENAME ตามกฎของเฟสบุ๊ค และส่งแบบ JSON เพื่อป้องกัน Parameter ผิดพลาด
+                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies?access_token=${token}`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: campParams.toString()
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                deep_copy: false, // เอาแค่แคมเปญเปล่า
+                                status_option: 'PAUSED',
+                                rename_options: {
+                                    rename_strategy: "ONLY_TOP_LEVEL_RENAME",
+                                    new_name: newCampName
+                                }
+                            })
                         });
                         const campCopyData = await campCopyRes.json();
                         if(campCopyData.error) {
@@ -1255,16 +1256,14 @@
                             const activeAds = (adsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
                             // 4.2 คัดลอกชุดโฆษณา (เอาแค่เปลือก) ไปใส่แคมเปญใหม่
-                            let adsetParams = new URLSearchParams();
-                            adsetParams.append('access_token', token);
-                            adsetParams.append('campaign_id', newCampId);
-                            adsetParams.append('deep_copy', 'false'); // สำคัญมาก: ไม่ให้มันก๊อปปี้โฆษณาอัตโนมัติ เพื่อเลี่ยงลิมิต 30 ชิ้น
-                            adsetParams.append('status_option', 'PAUSED');
-
-                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies`, {
+                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies?access_token=${token}`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: adsetParams.toString()
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    campaign_id: newCampId,
+                                    deep_copy: false, // เอาแค่ชุดโฆษณาเปล่า (เลี่ยงกฎ 30 ชิ้น)
+                                    status_option: 'PAUSED'
+                                })
                             });
                             const adsetCopyData = await adsetCopyRes.json();
                             if(adsetCopyData.error) {
@@ -1276,29 +1275,26 @@
 
                             // 4.3 อัปเดตงบและเวลาที่ชุดโฆษณาใหม่ที่เพิ่งสร้าง
                             if(inputBudget || inputTime) {
-                                let updateParams = new URLSearchParams();
-                                updateParams.append('access_token', token);
-                                if(inputBudget) updateParams.append('daily_budget', Math.floor(parseFloat(inputBudget) * 100));
-                                if(inputTime) updateParams.append('start_time', Math.floor(new Date(inputTime).getTime() / 1000));
+                                let updatePayload = {};
+                                if(inputBudget) updatePayload.daily_budget = Math.floor(parseFloat(inputBudget) * 100);
+                                if(inputTime) updatePayload.start_time = Math.floor(new Date(inputTime).getTime() / 1000);
 
-                                await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}`, {
+                                await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}?access_token=${token}`, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: updateParams.toString()
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(updatePayload)
                                 });
                             }
 
-                            // 4.4 คัดลอกโฆษณา ทีละ 1 ตัว ไปใส่ชุดโฆษณาใหม่
+                            // 4.4 คัดลอกโฆษณา ทีละ 1 ตัว ไปใส่ชุดโฆษณาใหม่ (ทำทีละชิ้น ไม่มีทางโดนบล็อก 100%)
                             for(let adItem of activeAds) {
-                                let adParams = new URLSearchParams();
-                                adParams.append('access_token', token);
-                                adParams.append('adset_id', newAdsetId); // ชี้เป้าไปที่ชุดโฆษณาที่เราเพิ่งสร้าง
-                                adParams.append('status_option', 'PAUSED');
-
-                                await fetch(`https://graph.facebook.com/v21.0/${adItem.id}/copies`, {
+                                await fetch(`https://graph.facebook.com/v21.0/${adItem.id}/copies?access_token=${token}`, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: adParams.toString()
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        adset_id: newAdsetId,
+                                        status_option: 'PAUSED'
+                                    })
                                 });
                             }
                         }
