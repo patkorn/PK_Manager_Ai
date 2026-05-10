@@ -164,7 +164,7 @@
                 </div>
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
                     <i class="fa-solid fa-info-circle text-fb-blue mt-0.5"></i>
-                    <p class="text-xs text-fb-dark font-medium leading-relaxed">ระบบจะทำการคัดลอกโครงสร้างแคมเปญ ชุดโฆษณา และสื่อโฆษณา ทีละชั้นแบบเจาะลึก 100% พร้อมอัปเดตงบและเวลาให้ แคมเปญจะถูกสร้างในสถานะ "ปิด (Paused)" เสมอ</p>
+                    <p class="text-xs text-fb-dark font-medium leading-relaxed">ระบบจะส่งคำสั่งให้ AI ของเฟสบุ๊คโคลนโครงสร้างแบบสมบูรณ์ 100% พร้อมอัปเดตงบและเวลาให้ แคมเปญใหม่จะอยู่ในสถานะ "ปิด (Paused)" เสมอ</p>
                 </div>
             </div>
             <div class="p-5 border-t border-gray-100 flex gap-3 bg-gray-50/50">
@@ -861,7 +861,7 @@
                 lblPrice: "ราคาขาย", lblCost: "ต้นทุนสินค้า", lblShipping: "ค่าส่ง", lblCOD: "ค่าธรรมเนียม COD", lblOther: "ค่าใช้จ่ายอื่นๆ (แพ็คเกจ, แอดมิน)", btnCalc: "คำนวณจุดคุ้มทุน & กำไร", btnClear: "ล้างข้อมูล",
                 lblTotalCost: "ต้นทุนรวม (ไม่รวมแอด)", lblProfit: "ต้นทุนซื้อที่รับได้สูงสุด (Target CPA)", lblTargetROAS: "เป้าหมาย ROAS", breakCpaDesc: "สูตร: ราคาขาย - ต้นทุน - ค่าส่ง - COD - อื่นๆ", breakRoasDesc: "ROAS ขั้นต่ำที่ไม่ขาดทุน",
                 lblAdsCost: "ค่าแอดที่จ่ายจริง (ต่อ 1 ออเดอร์)", adsCostDesc: "ใส่ค่าแอดจริงของคุณเพื่อคำนวณ 'กำไรสุทธิ'", lblNetProfit: "กำไรสุทธิต่อออเดอร์", netProfitDesc: "กำไรหลังหักต้นทุนสินค้าและค่าแอดแล้ว",
-                setTitle: "ตั้งค่าบัญชีส่วนตัว (Settings & Token)", setSubtitle: "ใส่ Facebook Access Token เพื่อให้ระบบจัดการแอดได้", setTokenDesc: "Token ของคุณจะถูกเก็บไว้ในบัญชีส่วนตัว (ไม่ปะปนกับพนักงานคนอื่น)", btnSaveToken: "บันทึก Token"
+                setTitle: "ตั้งค่าบัญชีส่วนตัว (Settings & Token)", setSubtitle: "ใส่ Facebook Access Token เพื่อให้ระบบจัดการแอดได้", setTokenDesc: "Token ของคุณจะถูกเก็บไว้ในบัญชีส่วนตัว (ไม่ปะปนกับพนักงานคนอื่น)", btnSaveToken: "บันึก Token"
             }
         };
 
@@ -1182,15 +1182,12 @@
 
             const btn = document.getElementById('btnConfirmDup');
             const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังแยกโคลนโฆษณาทีละชั้น...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังเตรียมคำสั่ง...';
             btn.disabled = true;
 
             try {
-                let successCount = 0;
+                let totalSuccess = 0;
                 let lastError = "";
-                
-                // ใช้ API v18.0 เฉพาะการคัดลอก เพื่อเลี่ยงบั๊กการลบเป้าหมาย Advantage+ ใน API ตัวใหม่ของ Facebook
-                const fbApiVer = 'v18.0'; 
                 
                 const selector = document.getElementById('adAccountSelector');
                 const adAcc = selector ? selector.value : null;
@@ -1206,7 +1203,7 @@
                     const campId = cb.value;
 
                     // 1. ดึงชื่อแคมเปญต้นฉบับ
-                    const campRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${campId}?fields=name&access_token=${token}`);
+                    const campRes = await fetch(`https://graph.facebook.com/v21.0/${campId}?fields=name&access_token=${token}`);
                     const campData = await campRes.json();
                     if(campData.error) {
                         lastError = campData.error.error_user_msg || campData.error.message;
@@ -1214,102 +1211,117 @@
                     }
                     const origCampName = campData.name || 'แคมเปญคัดลอก';
 
-                    // 2. ดึงเฉพาะชุดโฆษณา (Adsets)
-                    const adsetsRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
-                    const adsetsData = await adsetsRes.json();
-                    if(adsetsData.error) {
-                        lastError = adsetsData.error.error_user_msg || adsetsData.error.message;
+                    // 2. ใช้ระบบ Async Batch Request (แก้ปัญหาแคมเปญใหญ่เกิน 30 ชิ้น และปัญหา targeting_optimization ของเฟสบุ๊ค)
+                    const batchRequests = [];
+                    for(let i=0; i<copies; i++) {
+                        batchRequests.push({
+                            method: "POST",
+                            relative_url: `${campId}/copies`,
+                            body: "deep_copy=true&status_option=PAUSED" // สั่งเฟสบุ๊คก๊อปปี้ทุกอย่าง 100%
+                        });
+                    }
+
+                    const params = new URLSearchParams();
+                    params.append('access_token', token);
+                    params.append('batch', JSON.stringify(batchRequests));
+
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> ส่งคำสั่งให้ Facebook (1/3)...';
+
+                    // ยิงคำสั่งสร้างซ้ำไปให้ Facebook จัดการหลังบ้าน
+                    const asyncRes = await fetch(`https://graph.facebook.com/v21.0/${formattedAdAcc}/async_batch_requests`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: params.toString()
+                    });
+                    
+                    const asyncData = await asyncRes.json();
+                    if(asyncData.error) {
+                        lastError = asyncData.error.error_user_msg || asyncData.error.message;
                         continue;
                     }
-                    const activeAdsets = (adsetsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
-                    for(let i=0; i<copies; i++) {
-                        let newCampName = origCampName + (copies > 1 ? ` (Copy ${i+1})` : ` (Copy)`);
+                    const batchId = asyncData.id;
+                    let isFinished = false;
+                    let newCampIds = [];
 
-                        // 3. คัดลอกแคมเปญเปล่าๆ
-                        const campCopyRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${campId}/copies?access_token=${token}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                deep_copy: false,
-                                status_option: 'PAUSED'
-                            })
-                        });
-                        const campCopyData = await campCopyRes.json();
-                        if(campCopyData.error) {
-                            lastError = campCopyData.error.error_user_msg || campCopyData.error.message;
-                            continue;
+                    // 3. วนลูปเช็คสถานะการก๊อปปี้จาก Facebook (Polling) 
+                    for(let p=1; p<=45; p++) {
+                        await new Promise(r => setTimeout(r, 2000)); // รอ 2 วิ
+                        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Facebook กำลังโคลนโฆษณา (${p * 2} วิ)...`;
+                        
+                        const statusRes = await fetch(`https://graph.facebook.com/v21.0/${batchId}?access_token=${token}`);
+                        const statusData = await statusRes.json();
+                        
+                        if(statusData.status === 'FINISHED') {
+                            isFinished = true;
+                            if(statusData.results) {
+                                for(let r of statusData.results) {
+                                    if(r.code === 200) {
+                                        const b = JSON.parse(r.body);
+                                        if(b.copied_campaign_id) newCampIds.push(b.copied_campaign_id);
+                                        else if(b.id) newCampIds.push(b.id);
+                                    } else {
+                                        const b = JSON.parse(r.body || '{}');
+                                        lastError = b.error?.error_user_msg || b.error?.message;
+                                    }
+                                }
+                            }
+                            break;
+                        } else if (statusData.status === 'ERROR' || statusData.status === 'FAILED') {
+                            lastError = "ระบบหลังบ้านเฟสบุ๊คประมวลผลล้มเหลว";
+                            break;
                         }
-                        const newCampId = campCopyData.copied_campaign_id || campCopyData.id;
+                    }
 
-                        // อัปเดตชื่อแคมเปญให้ถูกต้อง
-                        await fetch(`https://graph.facebook.com/${fbApiVer}/${newCampId}?access_token=${token}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: newCampName })
-                        });
+                    if(!isFinished) {
+                        lastError = "หมดเวลารอเฟสบุ๊คประมวลผล (แคมเปญอาจจะสร้างเสร็จทีหลัง)";
+                        continue;
+                    }
 
-                        let adsetCopied = false;
-                        // 4. วนลูปชุดโฆษณา
-                        for(let adset of activeAdsets) {
-                            // ดึง Ads ก่อน
-                            const adsRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
-                            const adsData = await adsRes.json();
-                            const activeAds = (adsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
-
-                            // ก๊อปปี้ Adset เปล่าๆ เข้าแคมเปญใหม่
-                            const adsetCopyRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${adset.id}/copies?access_token=${token}`, {
+                    // 4. สวมการตั้งค่าใหม่ (ชื่อ, งบ, เวลา) ให้แคมเปญใหม่ที่เฟสบุ๊คเพิ่งโคลนเสร็จ
+                    if(newCampIds.length > 0) {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังตั้งค่างบประมาณและเวลา...';
+                        
+                        for(let i=0; i<newCampIds.length; i++) {
+                            const ncId = newCampIds[i];
+                            let newCampName = origCampName + (copies > 1 ? ` (Copy ${i+1})` : ` (Copy)`);
+                            
+                            // เปลี่ยนชื่อแคมเปญใหม่
+                            await fetch(`https://graph.facebook.com/v21.0/${ncId}?access_token=${token}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    campaign_id: newCampId,
-                                    deep_copy: false,
-                                    status_option: 'PAUSED'
-                                })
+                                body: JSON.stringify({ name: newCampName })
                             });
-                            const adsetCopyData = await adsetCopyRes.json();
-                            if(adsetCopyData.error) {
-                                lastError = adsetCopyData.error.error_user_msg || adsetCopyData.error.message;
-                                continue;
-                            }
-                            adsetCopied = true;
-                            const newAdsetId = adsetCopyData.copied_adset_id || adsetCopyData.id;
-
-                            // อัปเดตงบและเวลา
+                            
+                            // ดึงชุดโฆษณามาเพื่ออัปเดต งบและเวลา
                             if(inputBudget || inputTime) {
+                                const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${ncId}/adsets?fields=id&limit=100&access_token=${token}`);
+                                const adsetsData = await adsetsRes.json();
+                                const adsets = adsetsData.data || [];
+                                
                                 let updatePayload = {};
                                 if(inputBudget) updatePayload.daily_budget = Math.floor(parseFloat(inputBudget) * 100);
                                 if(inputTime) updatePayload.start_time = Math.floor(new Date(inputTime).getTime() / 1000);
-
-                                await fetch(`https://graph.facebook.com/${fbApiVer}/${newAdsetId}?access_token=${token}`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(updatePayload)
-                                });
-                            }
-
-                            // ก๊อปปี้โฆษณา
-                            for(let adItem of activeAds) {
-                                await fetch(`https://graph.facebook.com/${fbApiVer}/${adItem.id}/copies?access_token=${token}`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        adset_id: newAdsetId,
-                                        status_option: 'PAUSED'
-                                    })
-                                });
+                                
+                                for(let adset of adsets) {
+                                    await fetch(`https://graph.facebook.com/v21.0/${adset.id}?access_token=${token}`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(updatePayload)
+                                    });
+                                }
                             }
                         }
-                        if(adsetCopied) successCount++;
+                        totalSuccess += newCampIds.length;
                     }
                 }
                 
-                if(successCount > 0) {
-                    window.showToast(`สร้างซ้ำแบบดึงต้นฉบับและปรับแต่งสำเร็จ ${successCount} แคมเปญ!`);
+                if(totalSuccess > 0) {
+                    window.showToast(`สร้างซ้ำแบบดึงต้นฉบับ 100% พร้อมปรับแต่งสำเร็จ ${totalSuccess} แคมเปญ!`);
                     document.getElementById('duplicateModal').classList.add('hidden');
                     document.getElementById('selectAllCamps').checked = false;
                     window.toggleAllCamps(document.getElementById('selectAllCamps'));
-                    setTimeout(() => { window.syncData(); }, 3000);
+                    setTimeout(() => { window.syncData(); }, 2000);
                 } else {
                     let errMsg = "ไม่สามารถสร้างซ้ำได้: " + (lastError || "ไม่ทราบสาเหตุ");
                     if(lastError.includes("Application request limit reached")) errMsg = "API Limit เต็ม กรุณารอสักครู่แล้วกดใหม่";
