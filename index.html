@@ -1182,12 +1182,15 @@
 
             const btn = document.getElementById('btnConfirmDup');
             const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังคัดลอกแยกระดับชั้นอย่างละเอียด...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังแยกโคลนโฆษณาทีละชั้น...';
             btn.disabled = true;
 
             try {
                 let successCount = 0;
                 let lastError = "";
+                
+                // ใช้ API v18.0 เฉพาะการคัดลอก เพื่อเลี่ยงบั๊กการลบเป้าหมาย Advantage+ ใน API ตัวใหม่ของ Facebook
+                const fbApiVer = 'v18.0'; 
                 
                 const selector = document.getElementById('adAccountSelector');
                 const adAcc = selector ? selector.value : null;
@@ -1203,7 +1206,7 @@
                     const campId = cb.value;
 
                     // 1. ดึงชื่อแคมเปญต้นฉบับ
-                    const campRes = await fetch(`https://graph.facebook.com/v21.0/${campId}?fields=name&access_token=${token}`);
+                    const campRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${campId}?fields=name&access_token=${token}`);
                     const campData = await campRes.json();
                     if(campData.error) {
                         lastError = campData.error.error_user_msg || campData.error.message;
@@ -1212,7 +1215,7 @@
                     const origCampName = campData.name || 'แคมเปญคัดลอก';
 
                     // 2. ดึงเฉพาะชุดโฆษณา (Adsets)
-                    const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
+                    const adsetsRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${campId}/adsets?fields=id,status&limit=100&access_token=${token}`);
                     const adsetsData = await adsetsRes.json();
                     if(adsetsData.error) {
                         lastError = adsetsData.error.error_user_msg || adsetsData.error.message;
@@ -1223,8 +1226,8 @@
                     for(let i=0; i<copies; i++) {
                         let newCampName = origCampName + (copies > 1 ? ` (Copy ${i+1})` : ` (Copy)`);
 
-                        // 3. คัดลอกแคมเปญเปล่าๆ (ไม่ใช้ rename_options ป้องกันบั๊ก Facebook API)
-                        const campCopyRes = await fetch(`https://graph.facebook.com/v21.0/${campId}/copies?access_token=${token}`, {
+                        // 3. คัดลอกแคมเปญเปล่าๆ
+                        const campCopyRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${campId}/copies?access_token=${token}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1240,7 +1243,7 @@
                         const newCampId = campCopyData.copied_campaign_id || campCopyData.id;
 
                         // อัปเดตชื่อแคมเปญให้ถูกต้อง
-                        await fetch(`https://graph.facebook.com/v21.0/${newCampId}?access_token=${token}`, {
+                        await fetch(`https://graph.facebook.com/${fbApiVer}/${newCampId}?access_token=${token}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ name: newCampName })
@@ -1250,12 +1253,12 @@
                         // 4. วนลูปชุดโฆษณา
                         for(let adset of activeAdsets) {
                             // ดึง Ads ก่อน
-                            const adsRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
+                            const adsRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
                             const adsData = await adsRes.json();
                             const activeAds = (adsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
 
                             // ก๊อปปี้ Adset เปล่าๆ เข้าแคมเปญใหม่
-                            const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies?access_token=${token}`, {
+                            const adsetCopyRes = await fetch(`https://graph.facebook.com/${fbApiVer}/${adset.id}/copies?access_token=${token}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -1278,7 +1281,7 @@
                                 if(inputBudget) updatePayload.daily_budget = Math.floor(parseFloat(inputBudget) * 100);
                                 if(inputTime) updatePayload.start_time = Math.floor(new Date(inputTime).getTime() / 1000);
 
-                                await fetch(`https://graph.facebook.com/v21.0/${newAdsetId}?access_token=${token}`, {
+                                await fetch(`https://graph.facebook.com/${fbApiVer}/${newAdsetId}?access_token=${token}`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify(updatePayload)
@@ -1287,7 +1290,7 @@
 
                             // ก๊อปปี้โฆษณา
                             for(let adItem of activeAds) {
-                                await fetch(`https://graph.facebook.com/v21.0/${adItem.id}/copies?access_token=${token}`, {
+                                await fetch(`https://graph.facebook.com/${fbApiVer}/${adItem.id}/copies?access_token=${token}`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
