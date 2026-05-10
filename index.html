@@ -1182,7 +1182,7 @@
 
             const btn = document.getElementById('btnConfirmDup');
             const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังโคลนและปรับโครงสร้าง...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังคัดลอกแยกระดับชั้นอย่างละเอียด...';
             btn.disabled = true;
 
             try {
@@ -1253,12 +1253,19 @@
 
                         // 4. วนลูปก๊อปปี้ชุดโฆษณา ยัดเข้าไปในแคมเปญใหม่
                         for(let adset of activeAdsets) {
+                            
+                            // 4.1 ดึงโฆษณา (Ads) ทั้งหมดในชุดโฆษณานี้ออกมาก่อน
+                            const adsRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/ads?fields=id,status&limit=100&access_token=${token}`);
+                            const adsData = await adsRes.json();
+                            const activeAds = (adsData.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED');
+
+                            // 4.2 คัดลอก "เฉพาะชุดโฆษณาเปล่าๆ" เข้าแคมเปญใหม่ (deep_copy: false ป้องกันทะลุ 30 ชิ้น)
                             const adsetCopyRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/copies?access_token=${token}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
                                     campaign_id: newCampId, 
-                                    deep_copy: true, // อนุญาตให้หอบเอาสื่อโฆษณา(Ads) ตามเข้าไปด้วยทันที!
+                                    deep_copy: false, 
                                     status_option: 'PAUSED' 
                                 })
                             });
@@ -1271,10 +1278,9 @@
                             adsetCopied = true;
                             const newAdsetId = adsetCopyData.copied_adset_id || adsetCopyData.id;
 
-                            // 5. ปรับแก้เวลา และ งบประมาณในชุดโฆษณาใหม่ทันที
+                            // 4.3 ปรับแก้เวลา และ งบประมาณในชุดโฆษณาใหม่ทันที
                             if(inputBudget || inputTime) {
                                 let updatePayload = {};
-                                // อัปเดตงบเฉพาะกรณีที่แคมเปญไม่ได้ใช้ CBO (ไม่ได้ตั้งงบไว้ที่แคมเปญ)
                                 if(inputBudget && !campData.daily_budget && !campData.lifetime_budget) {
                                     updatePayload.daily_budget = Math.floor(parseFloat(inputBudget) * 100);
                                 }
@@ -1289,6 +1295,18 @@
                                         body: JSON.stringify(updatePayload)
                                     });
                                 }
+                            }
+
+                            // 4.4 นำโฆษณา (Ads) คัดลอกใส่ตามเข้าไปในชุดใหม่ ทีละ 1 ตัว (ปลอดภัยจากลิมิต 100%)
+                            for (let adItem of activeAds) {
+                                await fetch(`https://graph.facebook.com/v21.0/${adItem.id}/copies?access_token=${token}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        adset_id: newAdsetId,
+                                        status_option: 'PAUSED'
+                                    })
+                                });
                             }
                         }
                         
